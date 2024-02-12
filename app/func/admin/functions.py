@@ -54,7 +54,6 @@ async def receive_message_text(update: Update, context: CallbackContext):
 # Сохранение состояния фото и запрос url кнопки
 async def receive_photo(update: Update, context: CallbackContext):
     photo_file = await update.message.photo[-1].get_file()
-    await photo_file.download_to_drive("user_photo.jpg")
     context.user_data['post_photo_file_id'] = photo_file.file_id
     await update.message.reply_text('Сообщение с фото добавлено')
     await update.message.reply_text('Введите текст для кнопки и URL через пробел:')
