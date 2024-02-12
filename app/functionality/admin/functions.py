@@ -7,7 +7,7 @@ from telegram.ext import (CallbackContext,
                           MessageHandler,
                           filters,
                           ConversationHandler)
-from db import (get_all_user_chat_ids,)
+from db import get_all_user_chat_ids
 
 
 # Функция вызывающая главную панель администратора с клавиатурой
@@ -20,7 +20,7 @@ async def admin_start(update, context):
 
 # Функция возвращающая администратора в пользовательское меню
 async def personal_menu(update: Update, context: CallbackContext):
-    from app.func.user.functions import start
+    from app.functionality.user.functions import start
     await context.bot.send_message(chat_id=update.effective_chat.id,
                                    text="Добро пожаловать в пользовательское меню!")
     await start(update, context, check_admin=False)

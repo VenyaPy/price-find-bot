@@ -1,7 +1,7 @@
-from app.func.user.functions import *
-from app.func.admin.functions import *
+from app.functionality.user.functions import *
+from app.functionality.admin.functions import *
 from telegram.ext import CallbackQueryHandler
-from app.func.admin.functions import personal_menu
+from app.functionality.admin.functions import personal_menu
 
 
 # Функция для обработки текстовых сообщений

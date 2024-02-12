@@ -9,7 +9,7 @@ from app.scrap.mvideo import Mvideo
 import re
 from db import save_user, save_requests, history
 from config import admin
-from app.func.admin.functions import admin_start
+from app.functionality.admin.functions import admin_start
 from app.keyboard.inline import *
 
 
