@@ -4,7 +4,7 @@ from app.func.user.functions import *
 from app.func.admin.functions import *
 from telegram.ext import CallbackQueryHandler
 from app.func.admin.functions import personal_menu
-from app.func.admin.adv import *
+
 
 
 
@@ -25,8 +25,6 @@ async def handle_message(update: Update, context: CallbackContext):
         await history_requests(update, context)
     elif text == "Пользовательское меню‍🤓":
         await personal_menu(update, context)
-    elif text == "Реклама💵":
-        await start_adv(update, context)
 
 
 # Функция перенаправления кнопок Анализ и Вернуться
