@@ -1,7 +1,7 @@
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
-from telegram import Update, InputMediaPhoto, InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup
-from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters, CallbackQueryHandler
+from telegram import Update, InputMediaPhoto, ReplyKeyboardMarkup
+from telegram.ext import CallbackContext
 from app.scrap.ozon import WebScraper
 from app.scrap.wb import WebBrowser
 from app.scrap.dns import DNS
@@ -43,8 +43,6 @@ async def start(update: Update, context: CallbackContext, check_admin=True):
         await context.bot.send_message(chat_id=update.effective_chat.id,
                                        text="Выбери кнопку:",
                                        reply_markup=reply_markup)
-
-
 
 executor = ThreadPoolExecutor(10)
 
@@ -121,6 +119,7 @@ async def analyze_product(update: Update, context: CallbackContext):
     reply_markup = InlineKeyboardMarkup(keyboardMarkup)
     await update.message.reply_text("Спасибо!\n\nХочешь найти новый товар? Нажми «АНАЛИЗ ТОВАРА»",
                                     reply_markup=reply_markup)
+
 
 
 def perform_parsing(scraper, url, product_name):

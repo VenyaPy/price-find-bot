@@ -18,11 +18,14 @@ keyboardMarkup = [
 
 keyboard_for_admin = [
     [KeyboardButton("Аналитика📈"), KeyboardButton("Реклама💵")],
-    [KeyboardButton("Рассылка📢"), KeyboardButton("Пользовательское меню‍🤓")]
+    [KeyboardButton("Пользовательское меню‍🤓")]
 ]
 
-content_keyboard = [
-    [InlineKeyboardButton("Отправить пост", callback_data='send_post')]
+advertising_menu = [
+    [KeyboardButton("Написать пост✏️"), KeyboardButton("Показать пост🔍")],
+    [KeyboardButton("Отправить сейчас🌍"), KeyboardButton("Удалить пост❌")],
+    [KeyboardButton("Вернуться в админ-меню🔙")],
 ]
+
 
 

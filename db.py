@@ -100,3 +100,55 @@ def get_all_user_chat_ids():
     except Exception as e:
         print(f"Ошибка при получении user_id из базы данных: {e}")
     return chat_ids
+
+
+def get_text():
+    text = []
+    try:
+        with psycopg2.connect(
+                host=host,
+                user=user,
+                password=password,
+                dbname=db_name,
+                port=port,
+            ) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT message_text FROM admin_messages")
+                text += [row[0] for row in cursor.fetchall()]
+    except Exception as e:
+        print(f"Ошибка при получении: {e}")
+    return text
+
+
+def add_admin_message(text):
+
+    try:
+        with psycopg2.connect(host=host, user=user, password=password, dbname=db_name, port=port) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("INSERT INTO admin_messages (message_text) VALUES (%s)", (text,))
+    except Exception as e:
+        print(f"Ошибка при добавлении сообщения в базу данных: {e}")
+
+
+def delete_admin_message():
+    try:
+        with psycopg2.connect(host=host, user=user, password=password, dbname=db_name, port=port) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("DELETE FROM admin_messages")
+    except Exception as e:
+        print(f"Ошибка при удалении сообщения из базы данных: {e}")
+
+
+def get_admin_message():
+    try:
+        with psycopg2.connect(host=host, user=user, password=password, dbname=db_name, port=port) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT message_text FROM admin_messages LIMIT 1")
+                result = cursor.fetchone()
+                if result:
+                    return result[0]
+                else:
+                    return None
+    except Exception as e:
+        print(f"Ошибка при получении сообщения админа из базы данных: {e}")
+        return None

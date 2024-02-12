@@ -6,8 +6,6 @@ from telegram.ext import CallbackQueryHandler
 from app.func.admin.functions import personal_menu
 
 
-
-
 # Функция для обработки текстовых сообщений
 async def handle_message(update: Update, context: CallbackContext):
     text = update.message.text
@@ -25,6 +23,18 @@ async def handle_message(update: Update, context: CallbackContext):
         await history_requests(update, context)
     elif text == "Пользовательское меню‍🤓":
         await personal_menu(update, context)
+    elif text == "Реклама💵":
+        await adv(update, context)
+    elif text == "Написать пост✏️":
+        await start_add_message(update, context)
+    elif text == "Удалить пост❌":
+        await delete_message(update, context)
+    elif text == "Отправить сейчас🌍":
+        await send_message_to_all_users(update, context)
+    elif text == "Вернуться в админ-меню🔙":
+        await admin_start(update, context)
+    elif text == "Показать пост🔍":
+        await show_text(update, context)
 
 
 # Функция перенаправления кнопок Анализ и Вернуться

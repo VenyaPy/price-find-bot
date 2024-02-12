@@ -21,19 +21,16 @@ logging.basicConfig(
 if __name__ == '__main__':
     application = ApplicationBuilder().token(TOKEN).build()
 
-    # Создание обработчиков команд
     start_handler = CommandHandler('start', start)
     message_handler = MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message)
     callback_query_handler = CallbackQueryHandler(handle_callback_query)
 
     # Регистрация обработчиков в приложении
     application.add_handler(start_handler)
-    application.add_handler(conv_handler)
-    application.add_handler(message_handler)
+    application.add_handler(conv_handler)  # Добавьте сначала conv_handler
+    application.add_handler(message_handler, group=1)  # Добавьте message_handler в группу с более низким приоритетом
     application.add_handler(callback_query_handler)
 
-
-    # Запуск бота
     application.run_polling()
 
 
