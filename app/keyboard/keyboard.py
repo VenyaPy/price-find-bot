@@ -34,7 +34,7 @@ async def handle_message(update: Update, context: CallbackContext):
     elif text == "Вернуться в админ-меню🔙":
         await admin_start(update, context)
     elif text == "Показать пост🔍":
-        await show_text(update, context)
+        await show_post(update, context)
 
 
 # Функция перенаправления кнопок Анализ и Вернуться
