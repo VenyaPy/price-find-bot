@@ -1,9 +1,9 @@
-from app.func.user.functions import *
+from app.functionality.user.functions import *
 from app.keyboard.keyboard import handle_message, handle_callback_query
 from telegram.ext import (ApplicationBuilder, CallbackQueryHandler)
 from db import Start
 from config import TOKEN
-from app.func.admin.functions import *
+from app.functionality.admin.functions import *
 import logging
 
 
