@@ -1,5 +1,3 @@
-import logging
-
 from app.func.user.functions import *
 from app.func.admin.functions import *
 from telegram.ext import CallbackQueryHandler
@@ -26,18 +24,18 @@ async def handle_message(update: Update, context: CallbackContext):
     elif text == "Реклама💵":
         await adv(update, context)
     elif text == "Написать пост✏️":
-        await start_add_message(update, context)
+        return conv_handler
     elif text == "Удалить пост❌":
         await delete_message(update, context)
     elif text == "Отправить сейчас🌍":
         await send_message_to_all_users(update, context)
-    elif text == "Вернуться в админ-меню🔙":
+    elif text == "Вернуться в админ-меню👈":
         await admin_start(update, context)
     elif text == "Показать пост🔍":
-        await show_post(update, context)
+        await show_post_with_button(update, context)
 
 
-# Функция перенаправления кнопок Анализ и Вернуться
+# Функция для обработки кнопок
 async def handle_callback_query(update: Update, context: CallbackContext):
     query = update.callback_query
     await query.answer()

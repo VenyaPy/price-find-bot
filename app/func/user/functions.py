@@ -1,6 +1,6 @@
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
-from telegram import Update, InputMediaPhoto, ReplyKeyboardMarkup
+from telegram import Update, InputMediaPhoto, ReplyKeyboardMarkup, InlineKeyboardMarkup
 from telegram.ext import CallbackContext
 from app.scrap.ozon import WebScraper
 from app.scrap.wb import WebBrowser
@@ -13,10 +13,12 @@ from app.func.admin.functions import admin_start
 from app.keyboard.inline import *
 
 
+# Основная функция /start для пользователей, с инструкцией и клавиатурой
 async def start(update: Update, context: CallbackContext, check_admin=True):
     user_id = update.effective_chat.id
     save_user(user_id)
 
+    # Проверка на администратора находящегося в config
     if check_admin and user_id in admin:
         await context.bot.send_message(chat_id=update.effective_chat.id, text="Привет, администратор!")
         await admin_start(update, context)
@@ -60,6 +62,7 @@ async def request_product_name(update: Update, context: CallbackContext):
     context.user_data['message_id_to_edit'] = message.message_id
 
 
+# Функция, вызываемая кнопкой АНАЛИЗ ТОВАРА
 async def analyze_product(update: Update, context: CallbackContext):
     product_name = update.message.text
     user_id = update.effective_chat.id
@@ -74,6 +77,7 @@ async def analyze_product(update: Update, context: CallbackContext):
         text="Ожидайте. Идёт получение цен...\nОбычно это не занимает больше 20-30 секунд😉"
     )
 
+    # Запуск парсинга сайтов
     scraper = WebScraper()
     scraper_2 = WebBrowser()
     scraper_3 = DNS()
@@ -81,7 +85,7 @@ async def analyze_product(update: Update, context: CallbackContext):
 
     loop = asyncio.get_running_loop()
 
-    # Запуск всех задач параллельно
+    # Запуск всех задач параллельно для ускоренного парсинга сайтов
     tasks = [
         loop.run_in_executor(executor, lambda: perform_parsing(scraper,
                                                                'https://www.ozon.ru/', product_name)),
@@ -96,7 +100,7 @@ async def analyze_product(update: Update, context: CallbackContext):
     # Ожидание завершения всех задач
     results = await asyncio.gather(*tasks)
 
-    # Преобразование результатов и сортировка
+    # Преобразование результатов
     sortable_results = []
     for name, (price, url) in zip(["Ozon", "Wildberries", "DNS", "М.Видео"], results):
         if price != 'Цена не найдена':
@@ -104,13 +108,14 @@ async def analyze_product(update: Update, context: CallbackContext):
             price_number = int(re.sub(r'\D', '', price))
             sortable_results.append((name, price_number, url))
 
-    sortable_results.sort(key=lambda x: x[1])  # Сортировка по цене
+    # Сортировка от меньшей цены к большей
+    sortable_results.sort(key=lambda x: x[1])
 
     # Формирование ответа с форматированными ценами
     response_text = ""
     for name, price, url in sortable_results:
         formatted_price = f"{price:,}".replace(",", ".") + " ₽"  # Форматирование цены
-        response_text += f"[Цена товара на {name}: {formatted_price}]({url})\n"  # Markdown ссылка
+        response_text += f"[Цена товара на {name}: {formatted_price}]({url})\n"  # Гипперссылка
 
     if not response_text:
         response_text = "К сожалению, не удалось найти товар в указанных магазинах."
@@ -121,7 +126,7 @@ async def analyze_product(update: Update, context: CallbackContext):
                                     reply_markup=reply_markup)
 
 
-
+# Запуск парсинга
 def perform_parsing(scraper, url, product_name):
     scraper.open_page(url)
     scraper.search_product(product_name)
@@ -131,6 +136,7 @@ def perform_parsing(scraper, url, product_name):
     return price, product_url
 
 
+# Функция реализующая историю запросов с базы данных каждого пользователя
 async def history_requests(update: Update, context: CallbackContext):
     user_id = update.effective_chat.id
     chat_id = update.effective_chat.id

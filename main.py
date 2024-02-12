@@ -1,21 +1,22 @@
-import logging
 from app.func.user.functions import *
 from app.keyboard.keyboard import handle_message, handle_callback_query
-from telegram.ext import (ApplicationBuilder, CommandHandler, MessageHandler,
-                          filters, CallbackQueryHandler)
+from telegram.ext import (ApplicationBuilder, CallbackQueryHandler)
 from db import Start
 from config import TOKEN
 from app.func.admin.functions import *
+import logging
 
 
 # Проверка работоспособности базы данных
 Start()
 
+
 # Настройка логгирования
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.DEBUG  # Изменено с INFO на DEBUG для более подробного логирования
+    level=logging.INFO
 )
+
 
 # Построение бота
 if __name__ == '__main__':

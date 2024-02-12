@@ -1,6 +1,5 @@
 from telegram import (KeyboardButton,
-                      InlineKeyboardButton,
-                      InlineKeyboardMarkup)
+                      InlineKeyboardButton)
 
 keyboard = [
             [KeyboardButton("Анализ товара🔎"), KeyboardButton("Как пользоваться❓")],
@@ -11,7 +10,7 @@ keyboard = [
 keyboardMarkup = [
     [
         InlineKeyboardButton("Анализ товара🔎", callback_data="1"),
-        InlineKeyboardButton("Вернуться назад🔙", callback_data="2")
+        InlineKeyboardButton("Вернуться назад👈", callback_data="2")
     ]
 ]
 
@@ -24,7 +23,7 @@ keyboard_for_admin = [
 advertising_menu = [
     [KeyboardButton("Написать пост✏️"), KeyboardButton("Показать пост🔍")],
     [KeyboardButton("Отправить сейчас🌍"), KeyboardButton("Удалить пост❌")],
-    [KeyboardButton("Вернуться в админ-меню🔙")],
+    [KeyboardButton("Вернуться в админ-меню👈")],
 ]
 
 

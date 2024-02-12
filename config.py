@@ -5,4 +5,4 @@ db_name = "tg"
 port = "5432"
 admin = [517942985]
 
-TOKEN = '6517339962:AAHgV0-1_oyFW8At-NGjX8eJUyQGINJ2sJk'
+TOKEN = '6517339962:AAG1F-JAj8hay3YVl7KaqBF5x83r-NdI0bQ'
