@@ -1,4 +1,5 @@
 import psycopg2
+import asyncpg
 from config import host, user, password, db_name, port
 
 connection = None
@@ -29,7 +30,6 @@ def Start():
             print("[INFO] PostgreSQL connection closed")
 
 
-
 def save_user(user_id):
     with psycopg2.connect(
             host=host,
@@ -43,6 +43,45 @@ def save_user(user_id):
             if cursor.fetchone() is None:
                 cursor.execute("INSERT INTO users (user_id) VALUES (%s)", (user_id,))
                 conn.commit()
+
+
+import asyncpg
+
+dsn = {
+    'user': "postgres",
+    'password': "0000",
+    'database': "tg",
+    'host': "127.0.0.1",
+    'port': "5432"
+}
+
+
+async def check_email(user_id):
+    # Создаем соединение с базой данных
+    conn = await asyncpg.connect(**dsn)
+    try:
+        # Выполняем запрос к базе данных
+        result = await conn.fetch("SELECT email FROM user_emails WHERE user_id = $1", user_id)
+        # Проверяем, нашли ли мы email для данного user_id
+        return len(result) > 0
+    finally:
+        # Закрываем соединение с базой данных
+        await conn.close()
+
+
+async def save_user_email(user_id, email):
+    # Создаем соединение с базой данных
+    conn = await asyncpg.connect(**dsn)
+    try:
+        # Сначала проверяем, существует ли уже email для этого user_id
+        result = await conn.fetch("SELECT email FROM user_emails WHERE user_id = $1", user_id)
+        if len(result) == 0:
+            # Если нет, вставляем новый email
+            await conn.execute("INSERT INTO user_emails (user_id, email) VALUES ($1, $2)", user_id, email)
+    finally:
+        # Закрываем соединение с базой данных
+        await conn.close()
+
 
 def save_requests(user_id, new_request):
     with psycopg2.connect(

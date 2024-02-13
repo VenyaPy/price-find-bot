@@ -7,7 +7,7 @@ from app.scrap.wb import WebBrowser
 from app.scrap.dns import DNS
 from app.scrap.mvideo import Mvideo
 import re
-from db import save_user, save_requests, history
+from db import save_user, save_requests, history, check_email, save_user_email
 from config import admin
 from app.functionality.admin.functions import admin_start
 from app.keyboard.inline import *
@@ -51,15 +51,26 @@ executor = ThreadPoolExecutor(10)
 
 # Функция для запроса названия товара
 async def request_product_name(update: Update, context: CallbackContext):
-    if update.callback_query:
-        query = update.callback_query
-        chat_id = query.message.chat_id
-        message = await context.bot.send_message(chat_id=chat_id, text="Введи название товара для анализа:")
+    user_id = update.effective_chat.id
+    if await check_email(user_id):
+        if update.callback_query:
+            query = update.callback_query
+            chat_id = query.message.chat_id
+            message = await context.bot.send_message(chat_id=chat_id, text="Введи название товара для анализа:")
+        else:
+            message = await update.message.reply_text("Введи название товара для анализа:")
+        context.user_data['state'] = 'AWAITING_PRODUCT_NAME'
+        context.user_data['message_id_to_edit'] = message.message_id
     else:
-        message = await update.message.reply_text("Введи название товара для анализа:")
+        await update.message.reply_text("Чтобы пользоваться данной функция безгранично - отправьте свой email")
+        await save_email(update, context)
 
-    context.user_data['state'] = 'AWAITING_PRODUCT_NAME'
-    context.user_data['message_id_to_edit'] = message.message_id
+
+async def save_email(update: Update, context: CallbackContext):
+    email = update.message.text
+    user_id = update.effective_chat.id
+    await save_user_email(user_id, email)
+    await request_product_name(update, context)
 
 
 # Функция, вызываемая кнопкой АНАЛИЗ ТОВАРА
