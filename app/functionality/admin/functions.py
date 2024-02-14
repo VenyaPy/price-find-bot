@@ -144,19 +144,19 @@ async def public(update: Update, context: CallbackContext):
 
 
 async def start_add_public(update: Update, context: CallbackContext):
-    await update.message.reply_text("Введите id паблика")
+    await update.message.reply_text("Введите URL паблика")
     return ID_PUB
 
 
 async def add_pub(update: Update, context: CallbackContext):
     ids = update.message.text.strip()  # Убираем пробелы по краям для чистоты данных
     if not ids:  # Проверяем, что ids не пустая строка
-        logger.warning("Получен пустой id паблика.")
-        await update.message.reply_text("ID паблика не может быть пустым. Попробуйте снова.")
+        logger.warning("Получен пустой URL паблика.")
+        await update.message.reply_text("URL паблика не может быть пустым. Попробуйте снова.")
         return ID_PUB  # Возвращаем пользователя обратно к вводу ID паблика
 
     # Логируем полученный ID для отладки
-    logger.info(f"Добавление паблика с ID: {ids}")
+    logger.info(f"Добавление паблика с URL: {ids}")
 
     try:
         add_public(ids)  # Предполагается, что функция add_public(ids) определена где-то в вашем коде
@@ -174,7 +174,7 @@ async def cancel_dd(update: Update, context: CallbackContext):
 
 
 add_conv_handler = ConversationHandler(
-    entry_points=[CommandHandler('start_add_public', start_add_public)],  # Используем CommandHandler для начала диалога
+    entry_points=[MessageHandler(filters.Regex('Добавить паблик❗'), start_add_public)],  # Используем CommandHandler для начала диалога
     states={
         ID_PUB: [MessageHandler(filters.TEXT & ~filters.COMMAND, add_pub)],  # Ожидаем текстовое сообщение, не являющееся командой
     },
@@ -182,24 +182,16 @@ add_conv_handler = ConversationHandler(
 )
 
 
-async def create_pub(update: Update, context: CallbackContext):
-    publics = find_public()
-    keyboard = [
-        [InlineKeyboardButton(text=f"Подпишись {index+1}", url=pub)] for index, pub in enumerate(publics)
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    await update.message.reply_text("Выберите паблик для подписки:", reply_markup=reply_markup)
-
-
 async def active_public(update: Update, context: CallbackContext):
     chat_id = update.effective_chat.id
-    mes = show_public()  # Предполагаем, что это список строк
+    mes = show_public()  # Получаем список пар (id, id_public)
     if not mes:  # Проверяем, не пустой ли список
         await context.bot.send_message(chat_id=chat_id, text="Извините, у вас ещё нет пабликов")
     else:
-        # Преобразуем список в строку с нумерованными элементами
-        numbered_requests = "\n".join(f"{i + 1}. {request.strip()}" for i, request in enumerate(mes))
-        await context.bot.send_message(chat_id=chat_id, text=numbered_requests)
+        # Преобразуем список пар в строку, где каждый элемент форматируется как "idX - URL"
+        publics_info = "\n".join(f"id{public_id[0]} - {public_id[1]}" for public_id in mes)
+        await context.bot.send_message(chat_id=chat_id, text=publics_info)
+
 
 
 
@@ -217,6 +209,7 @@ async def delete(update: Update, context: CallbackContext):
         id_to_delete = int(pub_id)  # Преобразуем текст в целое число
         delete_public(id_to_delete)
         await update.message.reply_text("Паблик удален.")
+        return ConversationHandler.END
     except ValueError:
         await update.message.reply_text("Пожалуйста, введите корректный числовой ID.")
     except Exception as e:
@@ -229,7 +222,7 @@ async def cancel_del(update: Update, context: CallbackContext):
 
 
 del_conv_handler = ConversationHandler(
-    entry_points=[CommandHandler('del_public', delete_publics)],
+    entry_points=[MessageHandler(filters.Regex('Удалить паблик⛔'), delete_publics)],
     states={
         DELETE: [MessageHandler(filters.TEXT & ~filters.COMMAND, delete)],
     },

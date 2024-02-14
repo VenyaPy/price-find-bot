@@ -220,14 +220,15 @@ def show_public():
     try:
         with psycopg2.connect(host=host, user=user, password=password, dbname=db_name, port=port) as conn:
             with conn.cursor() as cursor:
-                cursor.execute("SELECT id_public FROM publics")
+                cursor.execute("SELECT id, id_public FROM publics")  # Измененный запрос
                 result = cursor.fetchall()
-                if result is not None:
-                    return result[0]
+                if result:
+                    return result
                 else:
-                    return "Извините, у вас ещё нет пабликов"
+                    return []
     except Exception as e:
         print(f"Ошибка при получении пабликов из базы данных: {e}")
+        return []
 
 
 def delete_public(id_to_delete):
@@ -253,3 +254,28 @@ def delete_public(id_to_delete):
     except Exception as e:
         print(f"Ошибка при удалении паблика из базы данных: {e}")
         return False
+
+
+def save_user_publics(save):
+    try:
+        with psycopg2.connect(host=host, user=user, password=password, dbname=db_name, port=port) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("INSERT INTO users (publics) VALUES (%s)", (save,))
+    except Exception as e:
+        print("Не удалось добавить паблик для пользователя")
+
+
+def check_user_publics():
+    try:
+        with psycopg2.connect(host=host, port=port, user=user, password=password, dbname=db_name) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT publics FROM users")
+                result = cursor.fetchall()
+                if result:
+                    return result
+                else:
+                    return []
+    except Exception as e:
+        print(f"Ошибка при получении пабликов из базы данных: {e}")
+        return []
+

@@ -21,7 +21,7 @@ async def handle_message(update: Update, context: CallbackContext):
         await history_requests(update, context)
     elif text == "Пользовательское меню‍🤓":
         await personal_menu(update, context)
-    elif text == "Реклама💵":
+    elif text == "Пост🚀":
         await adv(update, context)
     elif text == "Написать пост✏️":
         return conv_handler
@@ -33,16 +33,14 @@ async def handle_message(update: Update, context: CallbackContext):
         await admin_start(update, context)
     elif text == "Показать пост🔍":
         await show_post_with_button(update, context)
-    elif text == "Подписки":
+    elif text == "Подписки🤖":
         await public(update, context)
-    elif text == "Добавить паблик":
-        await add_conv_handler
-    elif text == "Удалить паблик":
-        await del_conv_handler
-    elif text == "Активные паблики":
+    elif text == "Активные паблики✅":
         await active_public(update, context)
     elif text == 'Паблик':
         await create_pub(update, context)
+    elif text == "Назад👈":
+        await admin_start(update, context)
 
 
 # Функция для обработки кнопок
