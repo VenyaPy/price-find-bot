@@ -7,7 +7,11 @@ from telegram.ext import (CallbackContext,
                           MessageHandler,
                           filters,
                           ConversationHandler)
-from db import get_all_user_chat_ids
+from db import get_all_user_chat_ids, add_public, find_public, show_public, delete_public
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 # Функция вызывающая главную панель администратора с клавиатурой
@@ -125,6 +129,118 @@ conv_handler = ConversationHandler(
     },
     fallbacks=[CommandHandler('cancel', delete_message)]
 )
+
+
+ID_PUB = 1  # Используем целое число для определения состояния
+
+
+async def public(update: Update, context: CallbackContext):
+    # Предполагается, что переменная pub_admin уже определена где-то в вашем коде
+    reply_markup = ReplyKeyboardMarkup(pub_admin, resize_keyboard=True, one_time_keyboard=False)
+    user_id = update.effective_chat.id
+    await context.bot.send_message(text="Выберите функцию:",
+                                   chat_id=user_id,
+                                   reply_markup=reply_markup)
+
+
+async def start_add_public(update: Update, context: CallbackContext):
+    await update.message.reply_text("Введите id паблика")
+    return ID_PUB
+
+
+async def add_pub(update: Update, context: CallbackContext):
+    ids = update.message.text.strip()  # Убираем пробелы по краям для чистоты данных
+    if not ids:  # Проверяем, что ids не пустая строка
+        logger.warning("Получен пустой id паблика.")
+        await update.message.reply_text("ID паблика не может быть пустым. Попробуйте снова.")
+        return ID_PUB  # Возвращаем пользователя обратно к вводу ID паблика
+
+    # Логируем полученный ID для отладки
+    logger.info(f"Добавление паблика с ID: {ids}")
+
+    try:
+        add_public(ids)  # Предполагается, что функция add_public(ids) определена где-то в вашем коде
+        await update.message.reply_text("Паблик добавлен.")
+    except Exception as e:
+        logger.error(f"Ошибка при добавлении паблика: {e}")
+        await update.message.reply_text("Произошла ошибка при добавлении паблика.")
+
+    return ConversationHandler.END
+
+
+async def cancel_dd(update: Update, context: CallbackContext):
+    await update.message.reply_text("Добавление паблика отменено.")
+    return ConversationHandler.END  # Завершаем диалог
+
+
+add_conv_handler = ConversationHandler(
+    entry_points=[CommandHandler('start_add_public', start_add_public)],  # Используем CommandHandler для начала диалога
+    states={
+        ID_PUB: [MessageHandler(filters.TEXT & ~filters.COMMAND, add_pub)],  # Ожидаем текстовое сообщение, не являющееся командой
+    },
+    fallbacks=[CommandHandler('can', cancel_dd)],  # Используем CommandHandler для отмены
+)
+
+
+async def create_pub(update: Update, context: CallbackContext):
+    publics = find_public()
+    keyboard = [
+        [InlineKeyboardButton(text=f"Подпишись {index+1}", url=pub)] for index, pub in enumerate(publics)
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await update.message.reply_text("Выберите паблик для подписки:", reply_markup=reply_markup)
+
+
+async def active_public(update: Update, context: CallbackContext):
+    chat_id = update.effective_chat.id
+    mes = show_public()  # Предполагаем, что это список строк
+    if not mes:  # Проверяем, не пустой ли список
+        await context.bot.send_message(chat_id=chat_id, text="Извините, у вас ещё нет пабликов")
+    else:
+        # Преобразуем список в строку с нумерованными элементами
+        numbered_requests = "\n".join(f"{i + 1}. {request.strip()}" for i, request in enumerate(mes))
+        await context.bot.send_message(chat_id=chat_id, text=numbered_requests)
+
+
+
+DELETE = 1  # Используем целое число для определения состояния
+
+
+async def delete_publics(update: Update, context: CallbackContext):
+    await update.message.reply_text("Выберите ID паблика для его удаления")
+    return DELETE
+
+
+async def delete(update: Update, context: CallbackContext):
+    pub_id = update.message.text
+    try:
+        id_to_delete = int(pub_id)  # Преобразуем текст в целое число
+        delete_public(id_to_delete)
+        await update.message.reply_text("Паблик удален.")
+    except ValueError:
+        await update.message.reply_text("Пожалуйста, введите корректный числовой ID.")
+    except Exception as e:
+        await update.message.reply_text(f"Произошла ошибка при удалении паблика: {e}")
+
+
+async def cancel_del(update: Update, context: CallbackContext):
+    await update.message.reply_text("Удаление паблика отменено.")
+    return ConversationHandler.END
+
+
+del_conv_handler = ConversationHandler(
+    entry_points=[CommandHandler('del_public', delete_publics)],
+    states={
+        DELETE: [MessageHandler(filters.TEXT & ~filters.COMMAND, delete)],
+    },
+    fallbacks=[CommandHandler('cancel', cancel_del)]  # Используем стандартную команду /cancel
+)
+
+
+
+
+
+
 
 
 

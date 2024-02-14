@@ -17,13 +17,18 @@ keyboardMarkup = [
 
 keyboard_for_admin = [
     [KeyboardButton("Аналитика📈"), KeyboardButton("Реклама💵")],
-    [KeyboardButton("Пользовательское меню‍🤓")]
+    [KeyboardButton("Подписки"), KeyboardButton("Пользовательское меню‍🤓")]
 ]
 
 advertising_menu = [
     [KeyboardButton("Написать пост✏️"), KeyboardButton("Показать пост🔍")],
     [KeyboardButton("Отправить сейчас🌍"), KeyboardButton("Удалить пост❌")],
     [KeyboardButton("Вернуться в админ-меню👈")],
+]
+
+pub_admin = [
+    [KeyboardButton("Активные паблики"), KeyboardButton("Добавить паблик")],
+    [KeyboardButton("Удалить паблик"), KeyboardButton("Назад")]
 ]
 
 

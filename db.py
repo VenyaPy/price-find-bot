@@ -191,3 +191,65 @@ def get_admin_message():
     except Exception as e:
         print(f"Ошибка при получении сообщения админа из базы данных: {e}")
         return None
+
+
+def add_public(ids):
+    try:
+        with psycopg2.connect(host=host, user=user, password=password, dbname=db_name, port=port) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("INSERT INTO publics (id_public) VALUES (%s)", (ids,))
+    except Exception as e:
+        print(f"Ошибка при добавлении паблика в базу данных: {e}")
+
+
+def find_public():
+    try:
+        with psycopg2.connect(host=host, user=user, password=password, dbname=db_name, port=port) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT id_public FROM publics")
+                # Изменяем fetchone на fetchall, чтобы получить список всех пабликов
+                result = cursor.fetchall()
+                # Преобразуем результат в список URL
+                return [item[0] for item in result]
+    except Exception as e:
+        print(f"Ошибка при получении пабликов из базы данных: {e}")
+        return []
+
+
+def show_public():
+    try:
+        with psycopg2.connect(host=host, user=user, password=password, dbname=db_name, port=port) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT id_public FROM publics")
+                result = cursor.fetchall()
+                if result is not None:
+                    return result[0]
+                else:
+                    return "Извините, у вас ещё нет пабликов"
+    except Exception as e:
+        print(f"Ошибка при получении пабликов из базы данных: {e}")
+
+
+def delete_public(id_to_delete):
+    try:
+        # Преобразуем входной id в целочисленное значение
+        id_to_delete = int(id_to_delete)
+
+        with psycopg2.connect(host=host, user=user, password=password, dbname=db_name, port=port) as conn:
+            with conn.cursor() as cursor:
+                # Удаляем запись на основе колонки id, а не id_public
+                cursor.execute("DELETE FROM publics WHERE id = %s RETURNING id;", (id_to_delete,))
+                deleted_id = cursor.fetchone()
+                conn.commit()
+                if deleted_id:
+                    print(f"Паблик с id {deleted_id[0]} успешно удален")
+                    return True
+                else:
+                    print("Паблик с таким id не найден.")
+                    return False
+    except ValueError:
+        print("Ошибка преобразования id в число.")
+        return False
+    except Exception as e:
+        print(f"Ошибка при удалении паблика из базы данных: {e}")
+        return False

@@ -33,6 +33,16 @@ async def handle_message(update: Update, context: CallbackContext):
         await admin_start(update, context)
     elif text == "Показать пост🔍":
         await show_post_with_button(update, context)
+    elif text == "Подписки":
+        await public(update, context)
+    elif text == "Добавить паблик":
+        await add_conv_handler
+    elif text == "Удалить паблик":
+        await del_conv_handler
+    elif text == "Активные паблики":
+        await active_public(update, context)
+    elif text == 'Паблик':
+        await create_pub(update, context)
 
 
 # Функция для обработки кнопок
