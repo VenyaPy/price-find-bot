@@ -193,24 +193,21 @@ def get_admin_message():
         return None
 
 
-def add_public(ids):
+def add_public(ids, url):
     try:
         with psycopg2.connect(host=host, user=user, password=password, dbname=db_name, port=port) as conn:
             with conn.cursor() as cursor:
-                cursor.execute("INSERT INTO publics (id_public) VALUES (%s)", (ids,))
+                cursor.execute("INSERT INTO publics (id_public, url) VALUES (%s, %s)", (ids, url))
     except Exception as e:
         print(f"Ошибка при добавлении паблика в базу данных: {e}")
 
 
-def find_public():
+async def find_public():
     try:
-        with psycopg2.connect(host=host, user=user, password=password, dbname=db_name, port=port) as conn:
-            with conn.cursor() as cursor:
-                cursor.execute("SELECT id_public FROM publics")
-                # Изменяем fetchone на fetchall, чтобы получить список всех пабликов
-                result = cursor.fetchall()
-                # Преобразуем результат в список URL
-                return [item[0] for item in result]
+        conn = await asyncpg.connect(host=host, user=user, password=password, database=db_name, port=port)
+        records = await conn.fetch("SELECT id_public, url FROM publics")
+        await conn.close()
+        return [{'id_public': record['id_public'], 'url': record['url']} for record in records]
     except Exception as e:
         print(f"Ошибка при получении пабликов из базы данных: {e}")
         return []
@@ -265,17 +262,28 @@ def save_user_publics(save):
         print("Не удалось добавить паблик для пользователя")
 
 
-def check_user_publics():
+async def is_user_subscribed(user_id, chat_id):
     try:
-        with psycopg2.connect(host=host, port=port, user=user, password=password, dbname=db_name) as conn:
-            with conn.cursor() as cursor:
-                cursor.execute("SELECT publics FROM users")
-                result = cursor.fetchall()
-                if result:
-                    return result
-                else:
-                    return []
+        # Создаем асинхронное подключение к базе данных
+        conn = await asyncpg.connect(host=host, user=user, password=password, dbname=db_name, port=port)
+        # Выполняем запрос на проверку подписки пользователя
+        record = await conn.fetchrow("SELECT EXISTS(SELECT 1 FROM users WHERE user_id = $1 AND publics @> $2::bigint[])", user_id, [chat_id])
+        await conn.close()
+        return record['exists']
     except Exception as e:
-        print(f"Ошибка при получении пабликов из базы данных: {e}")
+        print(f"Ошибка при проверке подписки пользователя: {e}")
+        return False
+
+
+def find_public_id():
+    try:
+        with psycopg2.connect(host=host, user=user, password=password, dbname=db_name, port=port) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT id_public FROM publics")
+                result = cursor.fetchall()
+                # Возвращаем список ID пабликов
+                return [item[0] for item in result]
+    except Exception as e:
+        print(f"Ошибка при получении ID пабликов из базы данных: {e}")
         return []
 

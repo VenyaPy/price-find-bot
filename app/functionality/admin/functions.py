@@ -131,7 +131,8 @@ conv_handler = ConversationHandler(
 )
 
 
-ID_PUB = 1  # Используем целое число для определения состояния
+ID_PUB = 1
+URL_PUB = 2
 
 
 async def public(update: Update, context: CallbackContext):
@@ -144,27 +145,30 @@ async def public(update: Update, context: CallbackContext):
 
 
 async def start_add_public(update: Update, context: CallbackContext):
-    await update.message.reply_text("Введите URL паблика")
+    await update.message.reply_text("Введите ID паблика")
     return ID_PUB
 
 
+async def add_pub_url(update: Update, context: CallbackContext):
+    # Сохраняем ID в контексте беседы
+    context.user_data['pub_id'] = update.message.text.strip()
+    await update.message.reply_text("Теперь введите URL паблика")
+    return URL_PUB
+
+
 async def add_pub(update: Update, context: CallbackContext):
-    ids = update.message.text.strip()  # Убираем пробелы по краям для чистоты данных
-    if not ids:  # Проверяем, что ids не пустая строка
-        logger.warning("Получен пустой URL паблика.")
+    # Извлекаем сохраненный ID из контекста беседы
+    pub_id = context.user_data.get('pub_id')
+    # Получаем URL из сообщения пользователя
+    pub_url = update.message.text.strip()
+    if not pub_url:
         await update.message.reply_text("URL паблика не может быть пустым. Попробуйте снова.")
-        return ID_PUB  # Возвращаем пользователя обратно к вводу ID паблика
-
-    # Логируем полученный ID для отладки
-    logger.info(f"Добавление паблика с URL: {ids}")
-
+        return URL_PUB
     try:
-        add_public(ids)  # Предполагается, что функция add_public(ids) определена где-то в вашем коде
-        await update.message.reply_text("Паблик добавлен.")
+        add_public(pub_id, pub_url)
+        await update.message.reply_text("Паблик успешно добавлен.")
     except Exception as e:
-        logger.error(f"Ошибка при добавлении паблика: {e}")
-        await update.message.reply_text("Произошла ошибка при добавлении паблика.")
-
+        await update.message.reply_text(f"Произошла ошибка при добавлении паблика: {e}")
     return ConversationHandler.END
 
 
@@ -174,11 +178,12 @@ async def cancel_dd(update: Update, context: CallbackContext):
 
 
 add_conv_handler = ConversationHandler(
-    entry_points=[MessageHandler(filters.Regex('Добавить паблик❗'), start_add_public)],  # Используем CommandHandler для начала диалога
+    entry_points=[MessageHandler(filters.Regex('Добавить паблик❗'), start_add_public)],
     states={
-        ID_PUB: [MessageHandler(filters.TEXT & ~filters.COMMAND, add_pub)],  # Ожидаем текстовое сообщение, не являющееся командой
+        ID_PUB: [MessageHandler(filters.TEXT & ~filters.COMMAND, add_pub_url)],
+        URL_PUB: [MessageHandler(filters.TEXT & ~filters.COMMAND, add_pub)],
     },
-    fallbacks=[CommandHandler('can', cancel_dd)],  # Используем CommandHandler для отмены
+    fallbacks=[CommandHandler('cancel', cancel_dd)],
 )
 
 

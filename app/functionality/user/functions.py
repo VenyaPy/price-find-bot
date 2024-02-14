@@ -7,44 +7,115 @@ from app.scrap.wb import WebBrowser
 from app.scrap.dns import DNS
 from app.scrap.mvideo import Mvideo
 import re
-from db import save_user, save_requests, history, check_email, save_user_email
-from config import admin
+from db import save_user, save_requests, history, check_email, save_user_email, find_public, find_public_id
 from app.functionality.admin.functions import admin_start
 from app.keyboard.inline import *
+from config import admin
 
 
-# Основная функция /start для пользователей, с инструкцией и клавиатурой
+async def generate_start_markup(context: CallbackContext):
+    # Получаем список пабликов из базы данных асинхронно
+    publics = await find_public()
+    # Генерируем клавиатуру
+    keyboard = [
+        [InlineKeyboardButton(text=f"Подпишись", url=public['url'])]
+        for public in publics
+    ]
+    return InlineKeyboardMarkup(keyboard)
+
+
+async def check_subscription(update: Update, context: CallbackContext):
+    user_id = update.effective_chat.id
+    public_ids = find_public_id()  # Получаем список ID пабликов из базы данных
+
+    subscribed = True  # Предполагаем, что пользователь подписан на все паблики
+    for chat_id in public_ids:
+        try:
+            # Проверяем статус подписки пользователя
+            status = await context.bot.get_chat_member(chat_id=chat_id, user_id=user_id)
+            if status.status not in ['creator', 'administrator', 'member']:
+                subscribed = False
+                break  # Если пользователь не подписан на один из пабликов, прерываем проверку
+        except Exception as e:
+            print(f"Ошибка при проверке подписки пользователя {user_id} на паблик {chat_id}: {e}")
+            subscribed = False
+            break
+
+    if subscribed:
+        await context.bot.send_message(chat_id=user_id, text="Спасибо, что подписались на все паблики!")
+    else:
+        # Повторно отправляем клавиатуру для подписки
+        reply_markup = await generate_start_markup(context)
+        await context.bot.send_message(chat_id=user_id,
+                                       text="Подпишитесь на паблики, чтобы продолжить использовать бота:",
+                                       reply_markup=reply_markup)
+
+
 async def start(update: Update, context: CallbackContext, check_admin=True):
     user_id = update.effective_chat.id
-    save_user(user_id)
 
-    # Проверка на администратора находящегося в config
+    # Проверяем подписку пользователя
     if check_admin and user_id in admin:
         await context.bot.send_message(chat_id=update.effective_chat.id, text="Привет, администратор!")
         await admin_start(update, context)
     else:
-        txt = ("Привет 🤚\n\nЯ — твой помощник в анализе цен на популярных маркетплейсах,"
-               " включая Ozon, Wildberries, DNS и другие!"
-               "\n\nДавай покажу, как мной пользоваться 👇")
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=txt)
+        publics = await find_public()
+        subscribed = True
+        for public in publics:
+            chat_id = public['id_public']
+            try:
+                # Проверяем статус подписки пользователя
+                status = await context.bot.get_chat_member(chat_id=chat_id, user_id=user_id)
+                if status.status not in ['creator', 'administrator', 'member']:
+                    subscribed = False
+                    break
+            except Exception as e:
+                print(f"Ошибка при проверке подписки пользователя {user_id} на паблик {chat_id}: {e}")
+                subscribed = False
+                break
 
-        # Формирование списка изображений для альбома
-        media_group = [
-            InputMediaPhoto('https://i.imgur.com/rDXKI9X.jpeg'),
-            InputMediaPhoto('https://i.imgur.com/0qgWiNS.jpeg'),
-            InputMediaPhoto('https://i.imgur.com/UKhgEuY.jpeg'),
-            InputMediaPhoto('https://i.imgur.com/Dv5OIRp.jpeg'),
-            InputMediaPhoto('https://i.imgur.com/nIWPAS8.jpeg')
-        ]
+        if subscribed:
+            await main_start_logic(update, context)
+        else:
+            await prompt_for_subscription(update, context)
 
-        # Отправка альбома
-        await context.bot.send_media_group(chat_id=update.effective_chat.id, media=media_group)
-        reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=False)
 
-        # Отправка сообщения с клавиатурой
-        await context.bot.send_message(chat_id=update.effective_chat.id,
-                                       text="Выбери кнопку:",
-                                       reply_markup=reply_markup)
+async def prompt_for_subscription(update: Update, context: CallbackContext):
+    # Повторно отправляем клавиатуру для подписки
+    reply_markup = await generate_start_markup(context)
+    await update.message.reply_text(
+        text="Подпишитесь на паблики, чтобы продолжить использовать бота:",
+        reply_markup=reply_markup
+    )
+
+
+async def main_start_logic(update: Update, context: CallbackContext):
+    user_id = update.effective_chat.id
+    save_user(user_id)
+
+
+    txt = ("Привет 🤚\n\nЯ — твой помощник в анализе цен на популярных маркетплейсах,"
+            " включая Ozon, Wildberries, DNS и другие!"
+            "\n\nДавай покажу, как мной пользоваться 👇")
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=txt)
+
+    # Формирование списка изображений для альбома
+    media_group = [
+        InputMediaPhoto('https://i.imgur.com/rDXKI9X.jpeg'),
+        InputMediaPhoto('https://i.imgur.com/0qgWiNS.jpeg'),
+        InputMediaPhoto('https://i.imgur.com/UKhgEuY.jpeg'),
+        InputMediaPhoto('https://i.imgur.com/Dv5OIRp.jpeg'),
+        InputMediaPhoto('https://i.imgur.com/nIWPAS8.jpeg')
+    ]
+
+    # Отправка альбома
+    await context.bot.send_media_group(chat_id=update.effective_chat.id, media=media_group)
+    reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=False)
+
+    # Отправка сообщения с клавиатурой
+    await context.bot.send_message(chat_id=update.effective_chat.id,
+                                   text="Выбери кнопку:",
+                                   reply_markup=reply_markup)
 
 
 executor = ThreadPoolExecutor(10)
