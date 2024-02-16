@@ -5,6 +5,9 @@ from db import Start
 from config import TOKEN
 from app.functionality.admin.functions import *
 import logging
+from app.functionality.admin.posting import conv_handler
+from app.functionality.admin.subscription import add_conv_handler, del_conv_handler
+from app.functionality.admin.accesses import admin_handler, adm_del_handler
 
 
 # Проверка работоспособности базы данных
@@ -26,15 +29,18 @@ if __name__ == '__main__':
     message_handler = MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message)
     callback_query_handler = CallbackQueryHandler(handle_callback_query)
 
-    application.add_handler(start_handler)  # Предполагается, что он не конфликтует с ConversationHandler
-    application.add_handler(conv_handler)  # Группа не указана, по умолчанию = 0
+    application.add_handler(start_handler)
+    application.add_handler(analyt_handler)
+    application.add_handler(conv_handler)
+    application.add_handler(admin_handler)
+    application.add_handler(adm_del_handler)
     application.add_handler(
-        add_conv_handler)  # Группа не указана, по умолчанию = 0, порядок добавления определяет приоритет
-    application.add_handler(del_conv_handler)  # То же, что выше
+        add_conv_handler)
+    application.add_handler(del_conv_handler)
     application.add_handler(
-        callback_query_handler)  # Может быть в любой группе, не конфликтует с текстовыми сообщениями
+        callback_query_handler)
     application.add_handler(message_handler,
-                            group=1)  # Более низкий приоритет, чтобы не блокировать ConversationHandlerы
+                            group=1)
 
     application.run_polling()
 

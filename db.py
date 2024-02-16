@@ -57,29 +57,81 @@ dsn = {
 
 
 async def check_email(user_id):
-    # Создаем соединение с базой данных
+    conn = await asyncpg.connect(**dsn)  # Убедитесь, что dsn настроен корректно
+    try:
+        result = await conn.fetchrow("SELECT email FROM user_emails WHERE user_id = $1", user_id)
+        if result:
+            return True  # Email найден
+        else:
+            return False  # Email не найден
+    finally:
+        await conn.close()
+
+
+async def show_user():
+    users = []
     conn = await asyncpg.connect(**dsn)
     try:
-        # Выполняем запрос к базе данных
-        result = await conn.fetch("SELECT email FROM user_emails WHERE user_id = $1", user_id)
-        # Проверяем, нашли ли мы email для данного user_id
-        return len(result) > 0
+        result = await conn.fetch("SELECT user_id FROM users")
+        users = [str(record['user_id']) for record in result]
+        return ",".join(users)
     finally:
-        # Закрываем соединение с базой данных
+        await conn.close()
+
+
+async def show_emails():
+    emails = []
+    conn = await asyncpg.connect(**dsn)
+    try:
+        result = await conn.fetch("SELECT email FROM user_emails")
+        emails = [str(record['email']) for record in result]
+        return ",".join(emails)
+    finally:
         await conn.close()
 
 
 async def save_user_email(user_id, email):
-    # Создаем соединение с базой данных
+    conn = await asyncpg.connect(**dsn)  # Убедитесь, что dsn настроен корректно
+    try:
+        # Используем fetchrow для поиска существующего email
+        result = await conn.fetchrow("SELECT email FROM user_emails WHERE user_id = $1", user_id)
+        if not result:
+            # Если email не найден, вставляем новый
+            await conn.execute("INSERT INTO user_emails (user_id, email) VALUES ($1, $2)", user_id, email)
+    except Exception as e:
+        print(f"Ошибка при работе с базой данных: {e}")
+    finally:
+        await conn.close()
+
+
+async def save_count():
     conn = await asyncpg.connect(**dsn)
     try:
-        # Сначала проверяем, существует ли уже email для этого user_id
-        result = await conn.fetch("SELECT email FROM user_emails WHERE user_id = $1", user_id)
-        if len(result) == 0:
-            # Если нет, вставляем новый email
-            await conn.execute("INSERT INTO user_emails (user_id, email) VALUES ($1, $2)", user_id, email)
+        # Проверяем, существует ли запись
+        result = await conn.fetchrow("SELECT quantity FROM counter WHERE id = 1")
+        if result:
+            # Если запись существует, увеличиваем quantity
+            await conn.execute("UPDATE counter SET quantity = quantity + 1 WHERE id = 1")
+        else:
+            # Если запись не существует, создаем ее с начальным значением quantity
+            await conn.execute("INSERT INTO counter (id, quantity) VALUES (1, 1)")
+    except Exception as e:
+        print(f"Ошибка при работе с базой данных: {e}")
     finally:
-        # Закрываем соединение с базой данных
+        await conn.close()
+
+
+async def show_views():
+    conn = await asyncpg.connect(**dsn)  # Предполагается, что dsn заранее определен
+    try:
+        # Использование await для асинхронного получения результата
+        result = await conn.fetchrow("SELECT quantity FROM counter WHERE id = 1")
+        if result:
+            # Возврат значения quantity напрямую
+            return result['quantity']
+    except Exception as e:
+        print("Ошибка при получении просмотров:", e)
+    finally:
         await conn.close()
 
 
@@ -253,37 +305,70 @@ def delete_public(id_to_delete):
         return False
 
 
-def save_user_publics(save):
+async def add_admin(id_admin):
     try:
-        with psycopg2.connect(host=host, user=user, password=password, dbname=db_name, port=port) as conn:
-            with conn.cursor() as cursor:
-                cursor.execute("INSERT INTO users (publics) VALUES (%s)", (save,))
-    except Exception as e:
-        print("Не удалось добавить паблик для пользователя")
+        # Преобразование id_admin из строки в целое число
+        id_admin_int = int(id_admin)
 
-
-async def is_user_subscribed(user_id, chat_id):
-    try:
-        # Создаем асинхронное подключение к базе данных
-        conn = await asyncpg.connect(host=host, user=user, password=password, dbname=db_name, port=port)
-        # Выполняем запрос на проверку подписки пользователя
-        record = await conn.fetchrow("SELECT EXISTS(SELECT 1 FROM users WHERE user_id = $1 AND publics @> $2::bigint[])", user_id, [chat_id])
+        conn = await asyncpg.connect(host=host, user=user, password=password, database=db_name, port=port)
+        # Использование id_admin_int как аргумента для запроса
+        await conn.execute("INSERT INTO admins (id_admin) VALUES ($1)", id_admin_int)
+        print("Администратор добавлен.")
         await conn.close()
-        return record['exists']
+    except ValueError:
+        # Ошибка преобразования типа, если id_admin не является числом
+        print("Ошибка: ID администратора должен быть целым числом.")
     except Exception as e:
-        print(f"Ошибка при проверке подписки пользователя: {e}")
+        print(f"Ошибка при добавлении администратора в базу данных: {e}")
+
+
+async def delete_admin(id_admin):
+    try:
+        # Преобразование id_admin из строки в целое число
+        id_admin_int = int(id_admin)
+
+        conn = await asyncpg.connect(host=host, user=user, password=password, database=db_name, port=port)
+        # Использование id_admin_int как аргумента для запроса
+        await conn.execute("DELETE FROM admins WHERE id_admin = $1", id_admin_int)
+        print("Администратор удален.")
+        await conn.close()
+    except ValueError:
+        # Ошибка преобразования типа, если id_admin не является числом
+        print("Ошибка: ID администратора должен быть целым числом.")
+    except Exception as e:
+        print(f"Ошибка при удалении администратора из базы данных: {e}")
+
+
+async def show_admins():
+    try:
+        conn = await asyncpg.connect(host=host, user=user, password=password, database=db_name, port=port)
+        records = await conn.fetch("SELECT id_admin FROM admins")
+        admins_list = [str(record['id_admin']) for record in records]
+        await conn.close()
+        return ", ".join(admins_list)
+    except Exception as e:
+        print(f"Ошибка при получении списка администраторов из базы данных: {e}")
+        return ""
+
+
+async def is_admin(id_admin):
+    try:
+        # Преобразование id_admin из строки в целое число, если это необходимо
+        id_admin_int = int(id_admin)
+
+        conn = await asyncpg.connect(host=host, user=user, password=password, database=db_name, port=port)
+        exists = await conn.fetchval("SELECT EXISTS(SELECT 1 FROM admins WHERE id_admin = $1)", id_admin_int)
+        await conn.close()
+        return exists
+    except ValueError:
+        # Если id_admin не может быть преобразован в int, значит, он некорректен
+        print("Ошибка: ID администратора должен быть числом.")
+        return False
+    except Exception as e:
+        print(f"Ошибка при проверке статуса администратора в базе данных: {e}")
         return False
 
 
-def find_public_id():
-    try:
-        with psycopg2.connect(host=host, user=user, password=password, dbname=db_name, port=port) as conn:
-            with conn.cursor() as cursor:
-                cursor.execute("SELECT id_public FROM publics")
-                result = cursor.fetchall()
-                # Возвращаем список ID пабликов
-                return [item[0] for item in result]
-    except Exception as e:
-        print(f"Ошибка при получении ID пабликов из базы данных: {e}")
-        return []
+
+
 

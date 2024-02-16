@@ -1,6 +1,7 @@
 from telegram import (KeyboardButton,
                       InlineKeyboardButton)
 
+
 keyboard = [
             [KeyboardButton("Анализ товара🔎"), KeyboardButton("Как пользоваться❓")],
             [KeyboardButton("История запросов📒"), KeyboardButton("Связаться с поддержкой📞")]
@@ -17,7 +18,7 @@ keyboardMarkup = [
 
 keyboard_for_admin = [
     [KeyboardButton("Аналитика📂"), KeyboardButton("Пост🚀")],
-    [KeyboardButton("Подписки🤖"), KeyboardButton("Функция🔒")],
+    [KeyboardButton("Подписки🤖"), KeyboardButton("Доступы🔒")],
     [KeyboardButton("Пользовательское меню‍🤓")]
 ]
 
@@ -32,6 +33,19 @@ pub_admin = [
     [KeyboardButton("Удалить паблик⛔"), KeyboardButton("Проверить♻️")],
     [KeyboardButton("Назад👈")]
 ]
+
+analytic = [
+    [KeyboardButton("Пользователи🤖"), KeyboardButton("EMAIL📧")],
+    [KeyboardButton("Просмотры👁️"), KeyboardButton("Назад👈")]
+]
+
+
+admins = [
+    [KeyboardButton("Список администраторов✅")],
+    [KeyboardButton("Выдать доступ🔑"), KeyboardButton("Удалить админа🔒")],
+    [KeyboardButton("Назад👈")]
+]
+
 
 
 

@@ -1,62 +1,29 @@
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from telegram import Update, InputMediaPhoto, ReplyKeyboardMarkup, InlineKeyboardMarkup
-from telegram.ext import CallbackContext
+from telegram.ext import (CallbackContext,
+                          CommandHandler,
+                          MessageHandler,
+                          filters,
+                          ConversationHandler)
 from app.scrap.ozon import WebScraper
 from app.scrap.wb import WebBrowser
 from app.scrap.dns import DNS
 from app.scrap.mvideo import Mvideo
 import re
-from db import save_user, save_requests, history, check_email, save_user_email, find_public, find_public_id
+from db import save_user, save_requests, history, check_email, save_user_email, find_public, save_count, is_admin
 from app.functionality.admin.functions import admin_start
 from app.keyboard.inline import *
-from config import admin
 
 
-async def generate_start_markup(context: CallbackContext):
-    # Получаем список пабликов из базы данных асинхронно
-    publics = await find_public()
-    # Генерируем клавиатуру
-    keyboard = [
-        [InlineKeyboardButton(text=f"Подпишись", url=public['url'])]
-        for public in publics
-    ]
-    return InlineKeyboardMarkup(keyboard)
-
-
-async def check_subscription(update: Update, context: CallbackContext):
-    user_id = update.effective_chat.id
-    public_ids = find_public_id()  # Получаем список ID пабликов из базы данных
-
-    subscribed = True  # Предполагаем, что пользователь подписан на все паблики
-    for chat_id in public_ids:
-        try:
-            # Проверяем статус подписки пользователя
-            status = await context.bot.get_chat_member(chat_id=chat_id, user_id=user_id)
-            if status.status not in ['creator', 'administrator', 'member']:
-                subscribed = False
-                break  # Если пользователь не подписан на один из пабликов, прерываем проверку
-        except Exception as e:
-            print(f"Ошибка при проверке подписки пользователя {user_id} на паблик {chat_id}: {e}")
-            subscribed = False
-            break
-
-    if subscribed:
-        await context.bot.send_message(chat_id=user_id, text="Спасибо, что подписались на все паблики!")
-    else:
-        # Повторно отправляем клавиатуру для подписки
-        reply_markup = await generate_start_markup(context)
-        await context.bot.send_message(chat_id=user_id,
-                                       text="Подпишитесь на паблики, чтобы продолжить использовать бота:",
-                                       reply_markup=reply_markup)
-
-
+# Главная команда /start
 async def start(update: Update, context: CallbackContext, check_admin=True):
     user_id = update.effective_chat.id
+    save_user(user_id)
 
     # Проверяем подписку пользователя
-    if check_admin and user_id in admin:
-        await context.bot.send_message(chat_id=update.effective_chat.id, text="Привет, администратор!")
+    if check_admin and await is_admin(user_id):
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="Привет, администратор!🖐️")
         await admin_start(update, context)
     else:
         publics = await find_public()
@@ -68,32 +35,41 @@ async def start(update: Update, context: CallbackContext, check_admin=True):
                 status = await context.bot.get_chat_member(chat_id=chat_id, user_id=user_id)
                 if status.status not in ['creator', 'administrator', 'member']:
                     subscribed = False
-                    break
+                    break  # Если пользователь не подписан на один из пабликов, прерываем проверку
             except Exception as e:
                 print(f"Ошибка при проверке подписки пользователя {user_id} на паблик {chat_id}: {e}")
                 subscribed = False
                 break
 
         if subscribed:
-            await main_start_logic(update, context)
+            await main_start(update, context)
         else:
-            await prompt_for_subscription(update, context)
+            await subscription(update, context)
 
 
-async def prompt_for_subscription(update: Update, context: CallbackContext):
+# Создание кнопок для подписки
+async def generate_start(context: CallbackContext):
+    # Получаем список пабликов из базы данных асинхронно
+    publics = await find_public()
+    # Генерируем клавиатуру
+    keyboard_publics = [
+        [InlineKeyboardButton(text=f"Подпишись👈", url=public['url'])]
+        for public in publics
+    ]
+    return InlineKeyboardMarkup(keyboard_publics)
+
+
+# Подписка на паблики
+async def subscription(update: Update, context: CallbackContext):
     # Повторно отправляем клавиатуру для подписки
-    reply_markup = await generate_start_markup(context)
+    reply_markup = await generate_start(context)
     await update.message.reply_text(
-        text="Подпишитесь на паблики, чтобы продолжить использовать бота:",
+        text="Привет! Подпишись на паблики, чтобы использовать этого бота😉",
         reply_markup=reply_markup
     )
 
 
-async def main_start_logic(update: Update, context: CallbackContext):
-    user_id = update.effective_chat.id
-    save_user(user_id)
-
-
+async def main_start(update: Update, context: CallbackContext):
     txt = ("Привет 🤚\n\nЯ — твой помощник в анализе цен на популярных маркетплейсах,"
             " включая Ozon, Wildberries, DNS и другие!"
             "\n\nДавай покажу, как мной пользоваться 👇")
@@ -121,42 +97,45 @@ async def main_start_logic(update: Update, context: CallbackContext):
 executor = ThreadPoolExecutor(10)
 
 
-# Функция для запроса названия товара
-async def request_product_name(update: Update, context: CallbackContext):
+# Константы состояний
+AWAITING_EMAIL, AWAITING_PRODUCT_NAME = range(2)
+
+
+async def start_email(update: Update, context: CallbackContext) -> int:
     user_id = update.effective_chat.id
     if await check_email(user_id):
-        if update.callback_query:
-            query = update.callback_query
-            chat_id = query.message.chat_id
-            message = await context.bot.send_message(chat_id=chat_id, text="Введи название товара для анализа:")
-        else:
-            message = await update.message.reply_text("Введи название товара для анализа:")
-        context.user_data['state'] = 'AWAITING_PRODUCT_NAME'
-        context.user_data['message_id_to_edit'] = message.message_id
+        await request_product_name(update, context)
+        return AWAITING_PRODUCT_NAME
     else:
-        await update.message.reply_text("Чтобы пользоваться данной функция безгранично - отправьте свой email")
-        await save_email(update, context)
+        await update.message.reply_text("Чтобы пользоваться данной функцией без ограничений - отправьте свой email")
+        return AWAITING_EMAIL
 
 
-async def save_email(update: Update, context: CallbackContext):
+async def save_email(update: Update, context: CallbackContext) -> int:
     email = update.message.text
     user_id = update.effective_chat.id
     await save_user_email(user_id, email)
-    await request_product_name(update, context)
+    # После сохранения email, запросите название товара
+    await update.message.reply_text("Введи название товара для анализа:")
+    return AWAITING_PRODUCT_NAME
+
+
+async def request_product_name(update: Update, context: CallbackContext) -> int:
+    await update.message.reply_text("Введи название товара для анализа:")
+    return AWAITING_PRODUCT_NAME
 
 
 # Функция, вызываемая кнопкой АНАЛИЗ ТОВАРА
-async def analyze_product(update: Update, context: CallbackContext):
+async def analyze_product(update: Update, context: CallbackContext) -> int:
+    await save_count()
     product_name = update.message.text
     user_id = update.effective_chat.id
     save_requests(user_id, new_request=product_name)
 
     chat_id = update.effective_chat.id
-    message_id = context.user_data.get('message_id_to_edit')
 
-    await context.bot.edit_message_text(
+    await context.bot.send_message(
         chat_id=chat_id,
-        message_id=message_id,
         text="Ожидайте. Идёт получение цен...\nОбычно это не занимает больше 20-30 секунд😉"
     )
 
@@ -207,6 +186,17 @@ async def analyze_product(update: Update, context: CallbackContext):
     reply_markup = InlineKeyboardMarkup(keyboardMarkup)
     await update.message.reply_text("Спасибо!\n\nХочешь найти новый товар? Нажми «АНАЛИЗ ТОВАРА»",
                                     reply_markup=reply_markup)
+    return ConversationHandler.END
+
+
+analyt_handler = ConversationHandler(
+        entry_points=[MessageHandler(filters.Regex('Анализ товара🔎'), start_email)],
+        states={
+            AWAITING_EMAIL: [MessageHandler(filters.TEXT & ~filters.COMMAND, save_email)],
+            AWAITING_PRODUCT_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, analyze_product)],
+        },
+        fallbacks=[],
+    )
 
 
 # Запуск парсинга
