@@ -10,6 +10,7 @@ from telegram.ext import (CallbackContext,
 from db import (get_all_user_chat_ids)
 
 
+
 # Функция отправки рекламного поста, реализованная через ConversationHandler
 TEXT_INPUT, PHOTO_INPUT, BUTTON_INFO = range(3)
 

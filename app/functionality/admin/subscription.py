@@ -10,6 +10,7 @@ from db import (add_public,
                 show_public,
                 delete_public)
 
+
 ID_PUB = 1
 URL_PUB = 2
 

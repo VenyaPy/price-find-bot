@@ -96,7 +96,6 @@ async def main_start(update: Update, context: CallbackContext):
 
 executor = ThreadPoolExecutor(10)
 
-
 # Константы состояний
 AWAITING_EMAIL, AWAITING_PRODUCT_NAME = range(2)
 
