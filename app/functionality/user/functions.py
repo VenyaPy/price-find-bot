@@ -6,7 +6,7 @@ from telegram.ext import (CallbackContext,
                           MessageHandler,
                           filters,
                           ConversationHandler)
-from app.scrap.ozon import WebScraper
+from app.scrap.scraperyandex import WebScraper
 from app.scrap.wb import WebBrowser
 from app.scrap.dns import DNS
 from app.scrap.mvideo import Mvideo
@@ -14,6 +14,7 @@ import re
 from db import save_user, save_requests, history, check_email, save_user_email, find_public, save_count, is_admin
 from app.functionality.admin.functions import admin_start
 from app.keyboard.inline import *
+import time
 
 
 # Главная команда /start
@@ -126,65 +127,38 @@ async def request_product_name(update: Update, context: CallbackContext) -> int:
 
 # Функция, вызываемая кнопкой АНАЛИЗ ТОВАРА
 async def analyze_product(update: Update, context: CallbackContext) -> int:
-    await save_count()
-    product_name = update.message.text
+    product_name = update.message.text.strip()  # Получаем название товара, удаляя лишние пробелы
     user_id = update.effective_chat.id
-    save_requests(user_id, new_request=product_name)
-
     chat_id = update.effective_chat.id
 
-    await context.bot.send_message(
-        chat_id=chat_id,
-        text="Ожидайте. Идёт получение цен...\nОбычно это не занимает больше 20-30 секунд😉"
-    )
+    # Запись запроса в историю запросов пользователя
+    save_requests(user_id, product_name)  # Предполагаем, что эта функция существует и корректно работает
+    await save_count()
+    await context.bot.send_message(chat_id, "Ожидайте. Идёт получение цен...\n"
+                                            "Обычно это не занимает больше 10-15 секунд😉")
 
-    # Запуск парсинга сайтов
     scraper = WebScraper()
-    scraper_2 = WebBrowser()
-    scraper_3 = DNS()
-    scraper_4 = Mvideo()
+    loop = asyncio.get_event_loop()
+    results = await loop.run_in_executor(None, lambda: perform_parsing(scraper, product_name))
 
-    loop = asyncio.get_running_loop()
+    seen_stores = set()
+    unique_results = []
+    for store_name, price, link in results:
+        if store_name not in seen_stores:
+            unique_results.append((store_name, price, link))
+            seen_stores.add(store_name)
 
-    # Запуск всех задач параллельно для ускоренного парсинга сайтов
-    tasks = [
-        loop.run_in_executor(executor, lambda: perform_parsing(scraper,
-                                                               'https://www.ozon.ru/', product_name)),
-        loop.run_in_executor(executor, lambda: perform_parsing(scraper_2,
-                                                               'https://www.wildberries.ru/', product_name)),
-        loop.run_in_executor(executor, lambda: perform_parsing(scraper_3,
-                                                               'https://www.dns-shop.ru/', product_name)),
-        loop.run_in_executor(executor, lambda: perform_parsing(scraper_4,
-                                                               'https://www.mvideo.ru/', product_name))
-    ]
-
-    # Ожидание завершения всех задач
-    results = await asyncio.gather(*tasks)
-
-    # Преобразование результатов
-    sortable_results = []
-    for name, (price, url) in zip(["Ozon", "Wildberries", "DNS", "М.Видео"], results):
-        if price != 'Цена не найдена':
-            # Удаляем нечисловые символы и преобразуем в число
-            price_number = int(re.sub(r'\D', '', price))
-            sortable_results.append((name, price_number, url))
-
-    # Сортировка от меньшей цены к большей
-    sortable_results.sort(key=lambda x: x[1])
-
-    # Формирование ответа с форматированными ценами
     response_text = ""
-    for name, price, url in sortable_results:
-        formatted_price = f"{price:,}".replace(",", ".") + " ₽"  # Форматирование цены
-        response_text += f"[Цена товара на {name}: {formatted_price}]({url})\n"  # Гипперссылка
+    for index, (store_name, price, link) in enumerate(unique_results, start=1):
+        formatted_store_name = store_name.title() if not store_name.isupper() else store_name
+        price_numeric = int(re.sub(r'\D', '', price))
+        price_formatted = f"{price_numeric:,.0f}".replace(",", ".").strip() + " ₽"
+        response_text += f"{index}. {formatted_store_name}: <a href='{link}'>{price_formatted}</a>\n"
 
     if not response_text:
-        response_text = "К сожалению, не удалось найти товар в указанных магазинах."
+        response_text = "К сожалению, не удалось найти товар."
 
-    await update.message.reply_text(response_text, parse_mode='Markdown')
-    reply_markup = InlineKeyboardMarkup(keyboardMarkup)
-    await update.message.reply_text("Спасибо!\n\nХочешь найти новый товар? Нажми «АНАЛИЗ ТОВАРА»",
-                                    reply_markup=reply_markup)
+    await update.message.reply_text(response_text, parse_mode='HTML', disable_web_page_preview=True)
     return ConversationHandler.END
 
 
@@ -199,13 +173,28 @@ analyt_handler = ConversationHandler(
 
 
 # Запуск парсинга
-def perform_parsing(scraper, url, product_name):
-    scraper.open_page(url)
+def perform_parsing(scraper, product_name):
+    scraper.open_page('https://market.yandex.ru/')
     scraper.search_product(product_name)
-    price = scraper.find_price()
-    product_url = scraper.show_url()
+    time.sleep(5)  # Даем время для загрузки результатов поиска
+    results = scraper.find_products()
     scraper.close_browser()
-    return price, product_url
+
+    # Фильтруем результаты и возвращаем их
+    filtered_results = [
+        (store_name, price, link)
+        for store_name, price, link in results
+        if price and link and 'Цена не найдена' not in price and 'Ссылка не найдена' not in link
+    ]
+
+    # Сортировка результатов по цене
+    sorted_results = sorted(filtered_results,
+                            key=lambda x: int(re.sub(r'\D', '', x[1])) if re.sub(r'\D', '', x[1]).isdigit() else float(
+                                'inf'))
+
+    return sorted_results
+
+
 
 
 # Функция реализующая историю запросов с базы данных каждого пользователя

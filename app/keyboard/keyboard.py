@@ -4,6 +4,7 @@ from app.functionality.admin.posting import *
 from app.functionality.admin.subscription import public, active_public
 from app.functionality.admin.accesses import show_admin
 from app.functionality.admin.analytics import users, emails, views
+from app.functionality.admin.functions import analytic_menu, personal_menu, admin_menu
 
 
 # Функция для обработки текстовых сообщений
@@ -43,6 +44,16 @@ async def handle_message(update: Update, context: CallbackContext, check_admin=T
             await admin_menu(update, context)
         elif text == "Список администраторов✅":
             await show_admin(update, context)
+        elif text == "Связаться с поддержкой📞":
+            await callback(update, context)
+        elif text == "Как пользоваться❓":
+            await start(update, context)
+        elif state == 'AWAITING_PRODUCT_NAME':
+            await analyze_product(update, context)
+        elif text == "История запросов📒":
+            await history_requests(update, context)
+        elif text == "Пользовательское меню‍🤓":
+            await personal_menu(update, context)
     else:
         if text == "Связаться с поддержкой📞":
             await callback(update, context)

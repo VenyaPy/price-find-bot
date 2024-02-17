@@ -4,6 +4,8 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
+import re
+
 
 class WebScraper:
     def __init__(self):
@@ -38,7 +40,7 @@ class WebScraper:
 
     def search_product(self, product_name):
         try:
-            wait = WebDriverWait(self.driver, 8)
+            wait = WebDriverWait(self.driver, 11)
             search_input = wait.until(EC.visibility_of_element_located((By.NAME, "text")))
             search_input.clear()
             search_input.send_keys(product_name)
@@ -46,17 +48,51 @@ class WebScraper:
         except Exception as ex:
             print("Ошибка в вводе:", ex)
 
-    def find_price(self):
-        try:
-            wait = WebDriverWait(self.driver, 10)
-            # Находим элементы цены
-            find_price_element = wait.until(
-                EC.visibility_of_element_located((By.XPATH, "//span[contains(@class, 'tsHeadline500Medium')]")))
-            price = find_price_element.text.strip()
-            return price  # Возвращаем цену, вместо её печати
-        except Exception as ex:
-            print("Ошибка при поиске цены", ex)
-            return 'Цена не найдена'  # Возвращаем None, если возникла ошибка
+
+    def find_products(self):
+        products_info = []
+        for i in range(1, 26):  # Перебор первых пяти товаров
+            try:
+                product_xpath = f"//div[@data-index='{i}']"
+                product_element = self.driver.find_element(By.XPATH, product_xpath)
+
+                try:
+                    # Использование XPath для выбора элемента с ценой, учитывая различные случаи
+                    price_element = product_element.find_element(By.XPATH,
+                                                                 ".//span[@data-auto='price-value'] | .//h3[@data-auto='snippet-price-current']")
+                    price_text = price_element.text.strip()
+                    # Очищаем текст, извлекаем только числовую часть цены
+                    price_numbers = re.findall(r'\d+', price_text.replace("\u202f", "").replace(" ", ""))
+                    price = ''.join(price_numbers)
+                    if price:  # Проверяем, найдены ли цифры в цене
+                        price = f"{int(price):,}".replace(",",
+                                                          " ") + " ₽"  # Форматируем цену с разделителями и символом валюты
+                    else:
+                        price = "Цена не найдена"
+                except Exception as e:
+                    pass
+
+                # Магазин
+                try:
+                    # Используйте только классы, точно указывающие на элемент с названием магазина
+                    store_element = product_element.find_element(By.CSS_SELECTOR,
+                                                                 "span._32ild._25-ND._66nxG._3WROT.Qg8Jj._1wKPk")
+                    store_name = store_element.text.strip()
+                except Exception as e:
+                    pass
+
+                # Ссылка
+                try:
+                    link_element = product_element.find_element(By.CSS_SELECTOR, "a.egKyN._2Fl2z")
+                    link = link_element.get_attribute('href')
+                except:
+                    pass
+
+                products_info.append((store_name, price, link))
+            except Exception as ex:
+                pass
+
+        return products_info
 
     def show_url(self):
         try:
@@ -73,7 +109,5 @@ class WebScraper:
     def close_browser(self):
         self.driver.close()
         self.driver.quit()
-
-
 
 

@@ -9,7 +9,6 @@ from telegram.ext import (CallbackContext,
                           ConversationHandler)
 
 
-
 # Функция вызывающая главную панель администратора с клавиатурой
 async def admin_start(update, context):
     reply_markup = ReplyKeyboardMarkup(keyboard_for_admin, resize_keyboard=True, one_time_keyboard=False)
