@@ -3,8 +3,8 @@ from telegram import (KeyboardButton,
 
 
 keyboard = [
-            [KeyboardButton("Анализ товара🔎"), KeyboardButton("Как пользоваться❓")],
-            [KeyboardButton("История запросов📒"), KeyboardButton("Связаться с поддержкой📞")]
+            [KeyboardButton("Анализ товара🤖")],
+            [KeyboardButton("История запросов📒"), KeyboardButton("Поддержка🧠")]
         ]
 
 
@@ -44,6 +44,12 @@ admins = [
     [KeyboardButton("Список администраторов✅")],
     [KeyboardButton("Выдать доступ🔑"), KeyboardButton("Удалить админа🔒")],
     [KeyboardButton("Назад👈")]
+]
+
+history_menu = [
+    [KeyboardButton("Показать историю👀"), KeyboardButton("Очистить историю❌")],
+    [KeyboardButton("Назад👈")],
+
 ]
 
 

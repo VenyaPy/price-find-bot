@@ -7,14 +7,19 @@ from telegram.ext import (CallbackContext,
                           filters,
                           ConversationHandler)
 from app.scrap.scraperyandex import WebScraper
-from app.scrap.wb import WebBrowser
-from app.scrap.dns import DNS
-from app.scrap.mvideo import Mvideo
 import re
-from db import save_user, save_requests, history, check_email, save_user_email, find_public, save_count, is_admin
+from db import save_user, save_requests, check_email, save_user_email, find_public, save_count, is_admin
 from app.functionality.admin.functions import admin_start
 from app.keyboard.inline import *
 import time
+
+
+async def start_menu(update: Update, context: CallbackContext, check_admin=True):
+    chat_id = update.effective_chat.id
+    reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=False)
+    await context.bot.send_message(reply_markup=reply_markup,
+                                   chat_id=chat_id,
+                                   text="Выбери функцию:")
 
 
 # Главная команда /start
@@ -163,7 +168,7 @@ async def analyze_product(update: Update, context: CallbackContext) -> int:
 
 
 analyt_handler = ConversationHandler(
-        entry_points=[MessageHandler(filters.Regex('Анализ товара🔎'), start_email)],
+        entry_points=[MessageHandler(filters.Regex('Анализ товара🤖'), start_email)],
         states={
             AWAITING_EMAIL: [MessageHandler(filters.TEXT & ~filters.COMMAND, save_email)],
             AWAITING_PRODUCT_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, analyze_product)],
@@ -194,27 +199,4 @@ def perform_parsing(scraper, product_name):
 
     return sorted_results
 
-
-
-
-# Функция реализующая историю запросов с базы данных каждого пользователя
-async def history_requests(update: Update, context: CallbackContext):
-    user_id = update.effective_chat.id
-    chat_id = update.effective_chat.id
-    mes = history(user_id)
-    requests_list = mes.split(",")
-    numbered_requests = "\n".join(f"{i + 1}. {request.strip()}"
-                                  for i, request in enumerate(requests_list))
-    await context.bot.send_message(text=numbered_requests, chat_id=chat_id)
-
-
-# Функция связи с поддержкой
-async def callback(update: Update, context: CallbackContext) -> None:
-    chat_id = update.effective_chat.id
-    call_text = 'Возник вопрос или проблема? 👌\nОпиши проблему сюда👇'
-    contact_button = InlineKeyboardMarkup([
-        [InlineKeyboardButton(text="Техническая поддержка", url="https://t.me/venyapopov")]
-    ])
-
-    await context.bot.send_message(chat_id=chat_id, text=call_text, reply_markup=contact_button)
 

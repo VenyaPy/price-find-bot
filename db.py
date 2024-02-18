@@ -369,6 +369,20 @@ async def is_admin(id_admin):
         return False
 
 
+async def delete_user_history(user_id):
+
+    # Преобразование user_id из строки в целое число
+    user_id_int = int(user_id)
+
+    conn = await asyncpg.connect(host=host, user=user, password=password, database=db_name, port=port)
+    # Очистка истории запросов для заданного user_id
+    await conn.execute("UPDATE users SET requests = NULL WHERE user_id = $1", user_id_int)
+    print("История запросов пользователя очищена.")
+    await conn.close()
+
+
+
+
 
 
 
