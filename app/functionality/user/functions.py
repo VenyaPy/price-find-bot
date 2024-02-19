@@ -21,36 +21,39 @@ async def start_menu(update: Update, context: CallbackContext, check_admin=True)
                                    text="Выбери функцию:")
 
 
-# Главная команда /start
+# Главная функция /start
 async def start(update: Update, context: CallbackContext, check_admin=True):
     user_id = update.effective_chat.id
-    save_user(user_id)
+    save_user(user_id)  # Предполагаемая функция для сохранения информации о пользователе
 
-    # Проверяем подписку пользователя
+    # Запускаем проверку на работоспособность бота (определяет админ в своей панели switcher)
+    if not context.bot_data.get('is_bot_active', True):
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="Бот временно отключен.")
+        return
+
+    # Продолжение логики команды start
     if check_admin and await is_admin(user_id):
         await context.bot.send_message(chat_id=update.effective_chat.id, text="Привет, администратор!🖐️")
-        await context.bot.send_photo(chat_id=update.effective_chat.id, photo="https://imgur.com/tAw7z6V")
-        await admin_start(update, context)
+        await admin_start(update, context)  # Предполагаемая функция для специфической логики администратора
     else:
-        publics = await find_public()
+        publics = await find_public()  # Предполагаемая функция для получения пабликов
         subscribed = True
         for public in publics:
             chat_id = public['id_public']
             try:
-                # Проверяем статус подписки пользователя
                 status = await context.bot.get_chat_member(chat_id=chat_id, user_id=user_id)
                 if status.status not in ['creator', 'administrator', 'member']:
                     subscribed = False
-                    break  # Если пользователь не подписан на один из пабликов, прерываем проверку
+                    break
             except Exception as e:
                 print(f"Ошибка при проверке подписки пользователя {user_id} на паблик {chat_id}: {e}")
                 subscribed = False
                 break
 
         if subscribed:
-            await main_start(update, context)
+            await main_start(update, context)  # Предполагаемая функция основной логики старта
         else:
-            await subscription(update, context)
+            await subscription(update, context)  # Предполагаемая функция для управления подписками
 
 
 # Создание кнопок для подписки
@@ -140,6 +143,10 @@ async def request_product_name(update: Update, context: CallbackContext) -> int:
 
 # Функция, вызываемая кнопкой АНАЛИЗ ТОВАРА
 async def analyze_product(update: Update, context: CallbackContext) -> int:
+    if not context.bot_data.get('is_bot_active', True):
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="Бот временно отключен.")
+        return
+
     product_name = update.message.text.strip()  # Получаем название товара, удаляя лишние пробелы
     user_id = update.effective_chat.id
     chat_id = update.effective_chat.id

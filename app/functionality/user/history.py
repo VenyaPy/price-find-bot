@@ -15,8 +15,6 @@ async def history_men(update: Update, context: CallbackContext):
                                    chat_id=update.effective_chat.id)
 
 
-
-
 # Функция реализующая историю запросов с базы данных каждого пользователя
 async def history_requests(update: Update, context: CallbackContext):
     user_id = update.effective_chat.id

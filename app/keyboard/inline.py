@@ -19,6 +19,7 @@ keyboardMarkup = [
 keyboard_for_admin = [
     [KeyboardButton("Аналитика📂"), KeyboardButton("Пост🚀")],
     [KeyboardButton("Подписки🤖"), KeyboardButton("Доступы🔒")],
+    [KeyboardButton("Тумблер⚠️")],
     [KeyboardButton("Пользовательское меню‍🤓")]
 ]
 
@@ -54,9 +55,13 @@ admins = [
 history_menu = [
     [KeyboardButton("Показать историю👀"), KeyboardButton("Очистить историю❌")],
     [KeyboardButton("Назад👈")],
-
 ]
 
+
+switch_menu = [
+    [KeyboardButton("Включить бота✅"), KeyboardButton("Отключить бота⛔")],
+    [KeyboardButton("Назад👈")]
+]
 
 
 

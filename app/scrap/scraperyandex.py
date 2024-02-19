@@ -15,21 +15,10 @@ class WebScraper:
         options.add_experimental_option('excludeSwitches', ['enable-automation'])
         options.add_experimental_option('useAutomationExtension', False)
 
+
         # Создание сервиса для Chrome драйвера
         service = webdriver.ChromeService()
         self.driver = webdriver.Chrome(service=service, options=options)
-
-        # Выполнение специальной команды для удаления следов автоматизации в браузере
-        self.driver.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {
-            'source': '''
-                delete window.cdc_adoQpoasnfa76pfcZLmcfl_Array;
-                delete window.cdc_adoQpoasnfa76pfcZLmcfl_Promise;
-                delete window.cdc_adoQpoasnfa76pfcZLmcfl_Symbol;
-                delete window.cdc_adoQpoasnfa76pfcZLmcfl_JSON;
-                delete window.cdc_adoQpoasnfa76pfcZLmcfl_Proxy;
-                delete window.cdc_adoQpoasnfa76pfcZLmcfl_Object;
-            '''
-        })
 
     def open_page(self, url):
         try:
