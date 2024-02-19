@@ -2,7 +2,6 @@ import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from telegram import Update, InputMediaPhoto, ReplyKeyboardMarkup, InlineKeyboardMarkup
 from telegram.ext import (CallbackContext,
-                          CommandHandler,
                           MessageHandler,
                           filters,
                           ConversationHandler)
@@ -30,6 +29,7 @@ async def start(update: Update, context: CallbackContext, check_admin=True):
     # Проверяем подписку пользователя
     if check_admin and await is_admin(user_id):
         await context.bot.send_message(chat_id=update.effective_chat.id, text="Привет, администратор!🖐️")
+        await context.bot.send_photo(chat_id=update.effective_chat.id, photo="https://imgur.com/tAw7z6V")
         await admin_start(update, context)
     else:
         publics = await find_public()
@@ -76,8 +76,7 @@ async def subscription(update: Update, context: CallbackContext):
 
 
 async def main_start(update: Update, context: CallbackContext):
-    txt = ("Привет 🤚\n\nЯ — твой помощник в анализе цен на популярных маркетплейсах,"
-            " включая Ozon, Wildberries, DNS и другие!"
+    txt = ("Привет 🤚\n\nЯ — твой помощник в анализе цен на популярных маркетплейсах!"
             "\n\nДавай покажу, как мной пользоваться 👇")
     await context.bot.send_message(chat_id=update.effective_chat.id, text=txt)
 
@@ -112,7 +111,16 @@ async def start_email(update: Update, context: CallbackContext) -> int:
         await request_product_name(update, context)
         return AWAITING_PRODUCT_NAME
     else:
-        await update.message.reply_text("Чтобы пользоваться данной функцией без ограничений - отправьте свой email")
+        await update.message.reply_text("👮‍♂️Для доступа к этой функции нужно ввести свой EMAIL:\n\n"
+                                        "1. Ваш адрес электронной почты используется исключительно "
+                                        "для обеспечения безопасного доступа к функции и не будет передан третьим "
+                                        "лицам или использован в коммерческих целях.\n"
+                                        "2. Мы не отправляем нежелательную почту (спам). "
+                                        "Ваш адрес электронной почты не будет использоваться для "
+                                        "рассылки рекламных материалов.\n"
+                                        "3. Мы строго следим за использованием информации о "
+                                        "пользователях в соответствии с нашими политиками "
+                                        "и законодательством о защите данных.\n\nВведите EMAIL ниже👇")
         return AWAITING_EMAIL
 
 
@@ -139,8 +147,10 @@ async def analyze_product(update: Update, context: CallbackContext) -> int:
     # Запись запроса в историю запросов пользователя
     save_requests(user_id, product_name)  # Предполагаем, что эта функция существует и корректно работает
     await save_count()
-    await context.bot.send_message(chat_id, "Ожидайте. Идёт получение цен...\n"
-                                            "Обычно это не занимает больше 10-15 секунд😉")
+    # Отправляем фото и текст, сохраняем message_id этих сообщений
+    photo_message = await context.bot.send_photo(chat_id=chat_id, photo="https://imgur.com/G1zON7g")
+    text_message = await context.bot.send_message(chat_id, "Ожидайте. Идёт получение цен...\n"
+                                                           "Обычно это не занимает больше 10-15 секунд😉")
 
     scraper = WebScraper()
     loop = asyncio.get_event_loop()
@@ -164,6 +174,8 @@ async def analyze_product(update: Update, context: CallbackContext) -> int:
         response_text = "К сожалению, не удалось найти товар."
 
     await update.message.reply_text(response_text, parse_mode='HTML', disable_web_page_preview=True)
+    await context.bot.delete_message(chat_id=chat_id, message_id=photo_message.message_id)
+    await context.bot.delete_message(chat_id=chat_id, message_id=text_message.message_id)
     return ConversationHandler.END
 
 

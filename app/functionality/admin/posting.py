@@ -18,9 +18,12 @@ TEXT_INPUT, PHOTO_INPUT, BUTTON_INFO = range(3)
 # Функция вызывающая 5 кнопок: написать пост, показать пост, отправить сейчас, удалить пост, вернуться
 async def adv(update: Update, context: CallbackContext):
     reply_mark = ReplyKeyboardMarkup(advertising_menu, resize_keyboard=True, one_time_keyboard=False)
+    await context.bot.send_photo(chat_id=update.effective_chat.id,
+                                 photo="https://imgur.com/aCIOb44")
     await context.bot.send_message(chat_id=update.effective_chat.id,
-                                   text="Выберите опцию:",
+                                   text="Меню постинга\nТы можешь сделать рассылку пользователям👇",
                                    reply_markup=reply_mark)
+
 
 
 # Введите текст сообщения:

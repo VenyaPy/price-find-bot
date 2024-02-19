@@ -94,17 +94,6 @@ class WebScraper:
 
         return products_info
 
-    def show_url(self):
-        try:
-            wait = WebDriverWait(self.driver, 12)
-            find_url = wait.until(EC.visibility_of_element_located
-                                  ((By.CSS_SELECTOR, 'a.tile-hover-target')))
-            url = find_url.get_attribute('href')
-            return url
-        except Exception as ex:
-            print("Ошибка при поиске URL", ex)
-            return 'URL не найден'
-
 
     def close_browser(self):
         self.driver.close()

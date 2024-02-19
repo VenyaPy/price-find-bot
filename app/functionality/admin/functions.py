@@ -1,12 +1,7 @@
 from telegram import (Update,
-                      ReplyKeyboardMarkup,
-                      InlineKeyboardMarkup)
+                      ReplyKeyboardMarkup)
 from app.keyboard.inline import *
-from telegram.ext import (CallbackContext,
-                          CommandHandler,
-                          MessageHandler,
-                          filters,
-                          ConversationHandler)
+from telegram.ext import (CallbackContext)
 
 
 # Функция вызывающая главную панель администратора с клавиатурой
@@ -28,15 +23,19 @@ async def personal_menu(update: Update, context: CallbackContext):
 async def analytic_menu(update: Update, context: CallbackContext):
     chat_id = update.effective_chat.id
     reply_markup = ReplyKeyboardMarkup(analytic, resize_keyboard=True, one_time_keyboard=False)
+    await context.bot.send_photo(chat_id=chat_id,
+                                 photo="https://imgur.com/AeN1Wx2")
     await context.bot.send_message(chat_id=chat_id,
-                                   text="Выберите опцию:",
+                                   text="Аналитическое меню бота👇",
                                    reply_markup=reply_markup)
 
 
 async def admin_menu(update: Update, context: CallbackContext):
     reply_markup = ReplyKeyboardMarkup(admins, resize_keyboard=True, one_time_keyboard=False)
+    await context.bot.send_photo(chat_id=update.effective_chat.id,
+                                 photo="https://imgur.com/UyHC5Zo")
     await context.bot.send_message(chat_id=update.effective_chat.id,
-                                   text="Выберите опцию",
+                                   text="Доступы\nТы можешь добавить или удалить администратора👇",
                                    reply_markup=reply_markup)
 
 

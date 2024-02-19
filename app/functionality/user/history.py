@@ -7,10 +7,14 @@ from app.keyboard.inline import history_menu
 
 async def history_men(update: Update, context: CallbackContext):
     reply_markup = ReplyKeyboardMarkup(history_menu, resize_keyboard=True, one_time_keyboard=False)
-    text = "Управление историей запросов:"
+    text = "Управление историей запросов👇"
+    await context.bot.send_photo(chat_id=update.effective_chat.id,
+                                 photo="https://imgur.com/sXV0OiC")
     await context.bot.send_message(text=text,
                                    reply_markup=reply_markup,
                                    chat_id=update.effective_chat.id)
+
+
 
 
 # Функция реализующая историю запросов с базы данных каждого пользователя

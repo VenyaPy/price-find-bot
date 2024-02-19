@@ -19,9 +19,13 @@ async def public(update: Update, context: CallbackContext):
     # Предполагается, что переменная pub_admin уже определена где-то в вашем коде
     reply_markup = ReplyKeyboardMarkup(pub_admin, resize_keyboard=True, one_time_keyboard=False)
     user_id = update.effective_chat.id
-    await context.bot.send_message(text="Выберите функцию:",
+    await context.bot.send_photo(chat_id=update.effective_chat.id,
+                                 photo="https://imgur.com/OsWwFTd")
+    await context.bot.send_message(text="Рекламное меню подписок\n"
+                                        "Добавить/удалить паблики для подписки при старте бота👇",
                                    chat_id=user_id,
                                    reply_markup=reply_markup)
+
 
 
 async def start_add_public(update: Update, context: CallbackContext):

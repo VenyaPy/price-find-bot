@@ -22,11 +22,13 @@ keyboard_for_admin = [
     [KeyboardButton("Пользовательское меню‍🤓")]
 ]
 
+
 advertising_menu = [
     [KeyboardButton("Написать пост✏️"), KeyboardButton("Показать пост🔍")],
     [KeyboardButton("Отправить сейчас🌍"), KeyboardButton("Удалить пост❌")],
     [KeyboardButton("Вернуться в админ-меню👈")],
 ]
+
 
 pub_admin = [
     [KeyboardButton("Активные паблики✅"), KeyboardButton("Добавить паблик❗")],
@@ -34,9 +36,11 @@ pub_admin = [
     [KeyboardButton("Назад👈")]
 ]
 
+
 analytic = [
     [KeyboardButton("Пользователи🤖"), KeyboardButton("EMAIL📧")],
-    [KeyboardButton("Просмотры👁️"), KeyboardButton("Назад👈")]
+    [KeyboardButton("Просмотры👁️")],
+    [KeyboardButton("Назад👈")]
 ]
 
 
@@ -45,6 +49,7 @@ admins = [
     [KeyboardButton("Выдать доступ🔑"), KeyboardButton("Удалить админа🔒")],
     [KeyboardButton("Назад👈")]
 ]
+
 
 history_menu = [
     [KeyboardButton("Показать историю👀"), KeyboardButton("Очистить историю❌")],

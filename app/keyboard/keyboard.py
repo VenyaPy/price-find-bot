@@ -56,12 +56,14 @@ async def handle_message(update: Update, context: CallbackContext, check_admin=T
             await history_men(update, context)
         elif text == "Пользовательское меню‍🤓":
             await personal_menu(update, context)
-        elif text == "Показать историю":
+        elif text == "Показать историю👀":
             await history_requests(update, context)
-        elif text == "Очистить историю":
+        elif text == "Очистить историю❌":
             await delete_history(update, context)
-        elif text == "Назад":
+        elif text == "Назад👈":
             await start_menu(update, context)
+        elif text == "Проверить♻️":
+            await subscription(update, context)
     else:
         if text == "Поддержка🧠":
             await callback(update, context)
