@@ -4,6 +4,7 @@ from telegram import (KeyboardButton,
 
 keyboard = [
             [KeyboardButton("Анализ товара🤖")],
+            [KeyboardButton("Сравнить🚀")],
             [KeyboardButton("История запросов📒"), KeyboardButton("Поддержка🧠")]
         ]
 
@@ -45,6 +46,12 @@ analytic = [
 ]
 
 
+comparison_menu = [
+    [KeyboardButton("Повторить сравнение🚀")],
+    [KeyboardButton("Вернуться👈")]
+]
+
+
 admins = [
     [KeyboardButton("Список администраторов✅")],
     [KeyboardButton("Выдать доступ🔑"), KeyboardButton("Удалить админа🔒")],
@@ -61,6 +68,11 @@ history_menu = [
 switch_menu = [
     [KeyboardButton("Включить бота✅"), KeyboardButton("Отключить бота⛔")],
     [KeyboardButton("Назад👈")]
+]
+
+parsing_menu = [
+    [KeyboardButton("Техника и гаджеты🤖"), KeyboardButton("Одежда👜")],
+    [KeyboardButton("Вернуться👈")]
 ]
 
 

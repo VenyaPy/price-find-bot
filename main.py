@@ -8,6 +8,8 @@ import logging
 from app.functionality.admin.posting import conv_handler
 from app.functionality.admin.subscription import add_conv_handler, del_conv_handler
 from app.functionality.admin.accesses import admin_handler, adm_del_handler
+from app.functionality.user.comparison import gpt_handler
+
 
 
 
@@ -35,6 +37,7 @@ if __name__ == '__main__':
     application.add_handler(conv_handler)
     application.add_handler(admin_handler)
     application.add_handler(adm_del_handler)
+    application.add_handler(gpt_handler)
     application.add_handler(
         add_conv_handler)
     application.add_handler(del_conv_handler)

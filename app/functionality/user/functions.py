@@ -5,7 +5,7 @@ from telegram.ext import (CallbackContext,
                           MessageHandler,
                           filters,
                           ConversationHandler)
-from app.scrap.scraperyandex import WebScraper
+from app.scraping.tech import WebScraper
 import re
 from db import save_user, save_requests, check_email, save_user_email, find_public, save_count, is_admin
 from app.functionality.admin.functions import admin_start
@@ -136,6 +136,14 @@ async def save_email(update: Update, context: CallbackContext) -> int:
     return AWAITING_PRODUCT_NAME
 
 
+async def parsing(update: Update, context: CallbackContext):
+    chat_id = update.effective_chat.id
+    reply_markup = ReplyKeyboardMarkup(parsing_menu, resize_keyboard=True, one_time_keyboard=False)
+    await context.bot.send_message(reply_markup=reply_markup,
+                                   chat_id=chat_id,
+                                   text="Выбери категорию товаров👇")
+
+
 async def request_product_name(update: Update, context: CallbackContext) -> int:
     await update.message.reply_text("Введи название товара для анализа:")
     return AWAITING_PRODUCT_NAME
@@ -156,7 +164,7 @@ async def analyze_product(update: Update, context: CallbackContext) -> int:
     await save_count()
     # Отправляем фото и текст, сохраняем message_id этих сообщений
     photo_message = await context.bot.send_photo(chat_id=chat_id, photo="https://imgur.com/G1zON7g")
-    text_message = await context.bot.send_message(chat_id, "Ожидайте. Идёт получение цен...\n"
+    text_message = await context.bot.send_message(chat_id, "Ожидайте. Идёт получение цен...♻️\n"
                                                            "Обычно это не занимает больше 10-15 секунд😉")
 
     scraper = WebScraper()
@@ -187,7 +195,7 @@ async def analyze_product(update: Update, context: CallbackContext) -> int:
 
 
 analyt_handler = ConversationHandler(
-        entry_points=[MessageHandler(filters.Regex('Анализ товара🤖'), start_email)],
+        entry_points=[MessageHandler(filters.Regex('Техника и гаджеты🤖'), start_email)],
         states={
             AWAITING_EMAIL: [MessageHandler(filters.TEXT & ~filters.COMMAND, save_email)],
             AWAITING_PRODUCT_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, analyze_product)],

@@ -8,6 +8,7 @@ from app.functionality.admin.functions import analytic_menu, personal_menu, admi
 from app.functionality.user.history import history_requests, history_men, delete_history
 from app.functionality.user.callback import callback
 from app.functionality.admin.switcher import switch, enable_start, disable_start
+from app.functionality.user.comparison import gpt_handler
 
 
 # Функция для обработки текстовых сообщений
@@ -61,7 +62,7 @@ async def handle_message(update: Update, context: CallbackContext, check_admin=T
             await history_requests(update, context)
         elif text == "Очистить историю❌":
             await delete_history(update, context)
-        elif text == "Назад👈":
+        elif text == "Вернуться👈":
             await start_menu(update, context)
         elif text == "Проверить♻️":
             await subscription(update, context)
@@ -71,6 +72,14 @@ async def handle_message(update: Update, context: CallbackContext, check_admin=T
             await enable_start(update, context)
         elif text == "Отключить бота⛔":
             await disable_start(update, context)
+        elif text == "Анализ товара🤖":
+            await parsing(update, context)
+        elif text == "Одежда👜":
+            await context.bot.send_message(chat_id=update.effective_chat.id,
+                                           text="Функция находится в разработке...")
+            await start_menu(update, context)
+        elif text == "Повторить сравнение🚀":
+            return gpt_handler
     else:
         if not context.bot_data.get('is_bot_active', True):
             await context.bot.send_message(chat_id=update.effective_chat.id, text="Бот временно отключен.")
@@ -90,7 +99,13 @@ async def handle_message(update: Update, context: CallbackContext, check_admin=T
                 await history_requests(update, context)
             elif text == "Очистить историю❌":
                 await delete_history(update, context)
-            elif text == "Назад👈":
+            elif text == "Вернуться👈":
+                await start_menu(update, context)
+            elif text == "Анализ товара🤖":
+                await parsing(update, context)
+            elif text == "Одежда👜":
+                await context.bot.send_message(chat_id=update.effective_chat.id,
+                                               text="Функция находится в разработке...")
                 await start_menu(update, context)
 
 
