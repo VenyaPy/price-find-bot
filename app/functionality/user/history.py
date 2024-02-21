@@ -1,7 +1,6 @@
-from db import history
+from db import history, delete_user_history
 from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import CallbackContext
-from db import delete_user_history
 from app.keyboard.inline import history_menu
 
 

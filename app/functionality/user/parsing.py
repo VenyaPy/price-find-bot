@@ -1,111 +1,31 @@
 import asyncio
-from concurrent.futures import ThreadPoolExecutor
-from telegram import Update, InputMediaPhoto, ReplyKeyboardMarkup, InlineKeyboardMarkup
-from telegram.ext import (CallbackContext,
-                          MessageHandler,
-                          filters,
-                          ConversationHandler)
-from app.scraping.tech import WebScraper
-import re
-from db import save_user, save_requests, check_email, save_user_email, find_public, save_count, is_admin
-from app.functionality.admin.functions import admin_start
-from app.keyboard.inline import *
 import time
-
-
-async def start_menu(update: Update, context: CallbackContext, check_admin=True):
-    chat_id = update.effective_chat.id
-    reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=False)
-    await context.bot.send_message(reply_markup=reply_markup,
-                                   chat_id=chat_id,
-                                   text="Выбери функцию:")
-
-
-# Главная функция /start
-async def start(update: Update, context: CallbackContext, check_admin=True):
-    user_id = update.effective_chat.id
-    save_user(user_id)  # Предполагаемая функция для сохранения информации о пользователе
-
-    # Запускаем проверку на работоспособность бота (определяет админ в своей панели switcher)
-    if not context.bot_data.get('is_bot_active', True):
-        await context.bot.send_message(chat_id=update.effective_chat.id, text="Бот временно отключен.")
-        return
-
-    # Продолжение логики команды start
-    if check_admin and await is_admin(user_id):
-        await context.bot.send_message(chat_id=update.effective_chat.id, text="Привет, администратор!🖐️")
-        await admin_start(update, context)  # Предполагаемая функция для специфической логики администратора
-    else:
-        publics = await find_public()  # Предполагаемая функция для получения пабликов
-        subscribed = True
-        for public in publics:
-            chat_id = public['id_public']
-            try:
-                status = await context.bot.get_chat_member(chat_id=chat_id, user_id=user_id)
-                if status.status not in ['creator', 'administrator', 'member']:
-                    subscribed = False
-                    break
-            except Exception as e:
-                print(f"Ошибка при проверке подписки пользователя {user_id} на паблик {chat_id}: {e}")
-                subscribed = False
-                break
-
-        if subscribed:
-            await main_start(update, context)  # Предполагаемая функция основной логики старта
-        else:
-            await subscription(update, context)  # Предполагаемая функция для управления подписками
-
-
-# Создание кнопок для подписки
-async def generate_start(context: CallbackContext):
-    # Получаем список пабликов из базы данных асинхронно
-    publics = await find_public()
-    # Генерируем клавиатуру
-    keyboard_publics = [
-        [InlineKeyboardButton(text=f"Подпишись👈", url=public['url'])]
-        for public in publics
-    ]
-    return InlineKeyboardMarkup(keyboard_publics)
-
-
-# Подписка на паблики
-async def subscription(update: Update, context: CallbackContext):
-    # Повторно отправляем клавиатуру для подписки
-    reply_markup = await generate_start(context)
-    await update.message.reply_text(
-        text="Привет! Подпишись на паблики, чтобы использовать этого бота😉",
-        reply_markup=reply_markup
-    )
-
-
-async def main_start(update: Update, context: CallbackContext):
-    txt = ("Привет 🤚\n\nЯ — твой помощник в анализе цен на популярных маркетплейсах!"
-            "\n\nДавай покажу, как мной пользоваться 👇")
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=txt)
-
-    # Формирование списка изображений для альбома
-    media_group = [
-        InputMediaPhoto('https://i.imgur.com/rDXKI9X.jpeg'),
-        InputMediaPhoto('https://i.imgur.com/0qgWiNS.jpeg'),
-        InputMediaPhoto('https://i.imgur.com/UKhgEuY.jpeg'),
-        InputMediaPhoto('https://i.imgur.com/Dv5OIRp.jpeg'),
-        InputMediaPhoto('https://i.imgur.com/nIWPAS8.jpeg')
-    ]
-
-    # Отправка альбома
-    await context.bot.send_media_group(chat_id=update.effective_chat.id, media=media_group)
-    reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=False)
-
-    # Отправка сообщения с клавиатурой
-    await context.bot.send_message(chat_id=update.effective_chat.id,
-                                   text="Выбери кнопку:",
-                                   reply_markup=reply_markup)
+import re
+from db import save_requests, save_count, check_email, save_user_email
+from concurrent.futures import ThreadPoolExecutor
+from telegram import Update, InlineKeyboardMarkup, ReplyKeyboardMarkup
+from telegram.ext import (MessageHandler,
+                          filters,
+                          ConversationHandler,
+                          CallbackQueryHandler,
+                          CallbackContext)
+from app.scraping.tech import WebScraper
+from app.keyboard.inline import keyboard_analyze, parsing_menu
 
 
 executor = ThreadPoolExecutor(10)
 
 # Константы состояний
 AWAITING_EMAIL, AWAITING_PRODUCT_NAME = range(2)
+
+
+async def start_email_callback(update: Update, context: CallbackContext):
+    query = update.callback_query
+    await query.answer()
+    chat_id = query.message.chat_id
+    await context.bot.delete_message(chat_id=chat_id, message_id=query.message.message_id)
+    await context.bot.send_message(chat_id=chat_id, text="Введи название товара для анализа:")
+    return AWAITING_PRODUCT_NAME
 
 
 async def start_email(update: Update, context: CallbackContext) -> int:
@@ -149,6 +69,29 @@ async def request_product_name(update: Update, context: CallbackContext) -> int:
     return AWAITING_PRODUCT_NAME
 
 
+async def split_message(chat_id, text, context, reply_markup=None, max_length=9300):
+    parts = []
+    while len(text) > max_length:
+        part = text[:max_length]
+        last_newline = part.rfind('\n')
+        if last_newline != -1:
+            parts.append(part[:last_newline])
+            text = text[last_newline+1:]
+        else:
+            parts.append(part)
+            text = text[:max_length]
+    parts.append(text)
+
+    reply_markup = InlineKeyboardMarkup(keyboard_analyze)
+
+    for i, part in enumerate(parts):
+        if i < len(parts) - 1:
+            await context.bot.send_message(chat_id=chat_id, text=part, parse_mode='HTML', disable_web_page_preview=True)
+        else:
+            await context.bot.send_message(chat_id=chat_id, text=part, parse_mode='HTML', disable_web_page_preview=True,
+                                           reply_markup=reply_markup)
+
+
 # Функция, вызываемая кнопкой АНАЛИЗ ТОВАРА
 async def analyze_product(update: Update, context: CallbackContext) -> int:
     if not context.bot_data.get('is_bot_active', True):
@@ -188,14 +131,23 @@ async def analyze_product(update: Update, context: CallbackContext) -> int:
     if not response_text:
         response_text = "К сожалению, не удалось найти товар."
 
-    await update.message.reply_text(response_text, parse_mode='HTML', disable_web_page_preview=True)
+    reply_markup = InlineKeyboardMarkup(keyboard_analyze)
+
+    reply_markup = InlineKeyboardMarkup(keyboard_analyze)  # Предполагается, что keyboard_analyze уже определен
+    if len(response_text) > 9300:
+        await split_message(chat_id, response_text, context, reply_markup=reply_markup)
+    else:
+        await context.bot.send_message(chat_id=chat_id, text=response_text, parse_mode='HTML',
+                                       disable_web_page_preview=True, reply_markup=reply_markup)
+
     await context.bot.delete_message(chat_id=chat_id, message_id=photo_message.message_id)
     await context.bot.delete_message(chat_id=chat_id, message_id=text_message.message_id)
     return ConversationHandler.END
 
 
 analyt_handler = ConversationHandler(
-        entry_points=[MessageHandler(filters.Regex('Техника и гаджеты🤖'), start_email)],
+        entry_points=[MessageHandler(filters.Regex('Техника и гаджеты🤖'), start_email),
+                      CallbackQueryHandler(start_email_callback, pattern='^repeater$')],
         states={
             AWAITING_EMAIL: [MessageHandler(filters.TEXT & ~filters.COMMAND, save_email)],
             AWAITING_PRODUCT_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, analyze_product)],
@@ -225,5 +177,3 @@ def perform_parsing(scraper, product_name):
                                 'inf'))
 
     return sorted_results
-
-

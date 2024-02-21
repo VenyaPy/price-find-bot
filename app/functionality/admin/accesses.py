@@ -1,13 +1,11 @@
-from telegram import (Update)
-from app.keyboard.inline import *
+from db import (show_admins,
+                delete_admin,
+                add_admin)
+from telegram import Update
 from telegram.ext import (CallbackContext,
                           MessageHandler,
                           filters,
                           ConversationHandler)
-from db import (show_admins,
-                delete_admin,
-                add_admin)
-
 
 
 async def show_admin(update: Update, context: CallbackContext):
@@ -24,7 +22,7 @@ async def show_admin(update: Update, context: CallbackContext):
     await context.bot.send_message(chat_id=chat_id, text=admins)
 
 
-ADD = 1  # Предполагается, что это состояние используется в ConversationHandler
+ADD = 1
 
 
 async def start_admins(update: Update, context: CallbackContext):

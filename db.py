@@ -2,8 +2,19 @@ import psycopg2
 import asyncpg
 from config import host, user, password, db_name, port
 
+
+dsn = {
+    'user': "postgres",
+    'password': "0000",
+    'database': "tg",
+    'host': "127.0.0.1",
+    'port': "5432"
+}
+
+
 connection = None
 
+# Проверочный тест сервера
 def Start():
     try:
         connection = psycopg2.connect(
@@ -13,23 +24,19 @@ def Start():
             dbname=db_name,
             port=port,
         )
-
-
         with connection.cursor() as cursor:
             cursor.execute(
                 "SELECT version();"
             )
-
-            print(f"Server version: {cursor.fetchone()}")
-
+            print(f"Версия сервера: {cursor.fetchone()}")
     except Exception as _ex:
-        print("[INFO] Error while working with PostgreSQL", _ex)
+        print("[INFO] Ошибка соединения с PostgreSQL", _ex)
     finally:
-        if connection:
-            connection.close()
-            print("[INFO] PostgreSQL connection closed")
+        connection.close()
+        print("[INFO] PostgreSQL соединение закрыт")
 
 
+# Функция сохранения юзера в БД
 def save_user(user_id):
     with psycopg2.connect(
             host=host,
@@ -45,29 +52,20 @@ def save_user(user_id):
                 conn.commit()
 
 
-import asyncpg
-
-dsn = {
-    'user': "postgres",
-    'password': "0000",
-    'database': "tg",
-    'host': "127.0.0.1",
-    'port': "5432"
-}
-
-
+# Проверка, есть ли email пользователя в БД
 async def check_email(user_id):
-    conn = await asyncpg.connect(**dsn)  # Убедитесь, что dsn настроен корректно
+    conn = await asyncpg.connect(**dsn)
     try:
         result = await conn.fetchrow("SELECT email FROM user_emails WHERE user_id = $1", user_id)
         if result:
-            return True  # Email найден
+            return True
         else:
-            return False  # Email не найден
+            return False
     finally:
         await conn.close()
 
 
+# Показать юзеров из базы данных
 async def show_user():
     users = []
     conn = await asyncpg.connect(**dsn)
@@ -79,6 +77,26 @@ async def show_user():
         await conn.close()
 
 
+# Получение всех юзеров из БД
+def get_all_user_chat_ids():
+    chat_ids = []
+    try:
+        with psycopg2.connect(
+                host=host,
+                user=user,
+                password=password,
+                dbname=db_name,
+                port=port,
+            ) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT user_id FROM users")
+                chat_ids = [record[0] for record in cursor.fetchall()]
+    except Exception as e:
+        print(f"Ошибка при получении user_id из базы данных: {e}")
+    return chat_ids
+
+
+# Показать emails из базы данных
 async def show_emails():
     emails = []
     conn = await asyncpg.connect(**dsn)
@@ -90,6 +108,7 @@ async def show_emails():
         await conn.close()
 
 
+# Сохранить email пользователя
 async def save_user_email(user_id, email):
     conn = await asyncpg.connect(**dsn)  # Убедитесь, что dsn настроен корректно
     try:
@@ -104,6 +123,7 @@ async def save_user_email(user_id, email):
         await conn.close()
 
 
+# Counter использования функции Анализ товара
 async def save_count():
     conn = await asyncpg.connect(**dsn)
     try:
@@ -121,13 +141,12 @@ async def save_count():
         await conn.close()
 
 
+# Функция просмотра, сколько просмотров на посту
 async def show_views():
-    conn = await asyncpg.connect(**dsn)  # Предполагается, что dsn заранее определен
+    conn = await asyncpg.connect(**dsn)
     try:
-        # Использование await для асинхронного получения результата
         result = await conn.fetchrow("SELECT quantity FROM counter WHERE id = 1")
         if result:
-            # Возврат значения quantity напрямую
             return result['quantity']
     except Exception as e:
         print("Ошибка при получении просмотров:", e)
@@ -135,6 +154,7 @@ async def show_views():
         await conn.close()
 
 
+# Сохранение запроса пользователя в его историю
 def save_requests(user_id, new_request):
     with psycopg2.connect(
             host=host,
@@ -157,6 +177,8 @@ def save_requests(user_id, new_request):
                 pass
             conn.commit()
 
+
+# Получение истории запросов
 def history(user_id):
     with psycopg2.connect(
             host=host,
@@ -175,76 +197,8 @@ def history(user_id):
                 return "Извините, у вас ещё нет истории запросов"
 
 
-def get_all_user_chat_ids():
-    chat_ids = []
-    try:
-        with psycopg2.connect(
-                host=host,
-                user=user,
-                password=password,
-                dbname=db_name,
-                port=port,
-            ) as conn:
-            with conn.cursor() as cursor:
-                cursor.execute("SELECT user_id FROM users")
-                chat_ids = [record[0] for record in cursor.fetchall()]
-    except Exception as e:
-        print(f"Ошибка при получении user_id из базы данных: {e}")
-    return chat_ids
-
-
-def get_text():
-    text = []
-    try:
-        with psycopg2.connect(
-                host=host,
-                user=user,
-                password=password,
-                dbname=db_name,
-                port=port,
-            ) as conn:
-            with conn.cursor() as cursor:
-                cursor.execute("SELECT message_text FROM admin_messages")
-                text += [row[0] for row in cursor.fetchall()]
-    except Exception as e:
-        print(f"Ошибка при получении: {e}")
-    return text
-
-
-def add_admin_message(text):
-
-    try:
-        with psycopg2.connect(host=host, user=user, password=password, dbname=db_name, port=port) as conn:
-            with conn.cursor() as cursor:
-                cursor.execute("INSERT INTO admin_messages (message_text) VALUES (%s)", (text,))
-    except Exception as e:
-        print(f"Ошибка при добавлении сообщения в базу данных: {e}")
-
-
-def delete_admin_message():
-    try:
-        with psycopg2.connect(host=host, user=user, password=password, dbname=db_name, port=port) as conn:
-            with conn.cursor() as cursor:
-                cursor.execute("DELETE FROM admin_messages")
-    except Exception as e:
-        print(f"Ошибка при удалении сообщения из базы данных: {e}")
-
-
-def get_admin_message():
-    try:
-        with psycopg2.connect(host=host, user=user, password=password, dbname=db_name, port=port) as conn:
-            with conn.cursor() as cursor:
-                cursor.execute("SELECT message_text FROM admin_messages LIMIT 1")
-                result = cursor.fetchone()
-                if result:
-                    return result[0]
-                else:
-                    return None
-    except Exception as e:
-        print(f"Ошибка при получении сообщения админа из базы данных: {e}")
-        return None
-
-
+# Добавление id и url паблика для подпски
+# Функция используется перед запуском пользователем бота
 def add_public(ids, url):
     try:
         with psycopg2.connect(host=host, user=user, password=password, dbname=db_name, port=port) as conn:
@@ -254,6 +208,7 @@ def add_public(ids, url):
         print(f"Ошибка при добавлении паблика в базу данных: {e}")
 
 
+# Ищет паблики в БД
 async def find_public():
     try:
         conn = await asyncpg.connect(host=host, user=user, password=password, database=db_name, port=port)
@@ -265,6 +220,7 @@ async def find_public():
         return []
 
 
+# Показывает паблики из БД через админ панель
 def show_public():
     try:
         with psycopg2.connect(host=host, user=user, password=password, dbname=db_name, port=port) as conn:
@@ -280,6 +236,7 @@ def show_public():
         return []
 
 
+# Удаление паблика
 def delete_public(id_to_delete):
     try:
         # Преобразуем входной id в целочисленное значение
@@ -305,6 +262,7 @@ def delete_public(id_to_delete):
         return False
 
 
+# Добавление id администратора бота
 async def add_admin(id_admin):
     try:
         # Преобразование id_admin из строки в целое число
@@ -322,6 +280,7 @@ async def add_admin(id_admin):
         print(f"Ошибка при добавлении администратора в базу данных: {e}")
 
 
+# Удаление администратора
 async def delete_admin(id_admin):
     try:
         # Преобразование id_admin из строки в целое число
@@ -339,6 +298,7 @@ async def delete_admin(id_admin):
         print(f"Ошибка при удалении администратора из базы данных: {e}")
 
 
+# Показать активных администраторов в базе данных
 async def show_admins():
     try:
         conn = await asyncpg.connect(host=host, user=user, password=password, database=db_name, port=port)
@@ -351,6 +311,7 @@ async def show_admins():
         return ""
 
 
+# Проверка на администратора
 async def is_admin(id_admin):
     try:
         # Преобразование id_admin из строки в целое число, если это необходимо
@@ -369,6 +330,7 @@ async def is_admin(id_admin):
         return False
 
 
+# Функция удаления пользователем своей истории
 async def delete_user_history(user_id):
 
     # Преобразование user_id из строки в целое число

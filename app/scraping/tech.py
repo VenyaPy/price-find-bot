@@ -51,63 +51,88 @@ class WebScraper:
             print("Ошибка в вводе:", ex)
 
 
-    def find_products(self, desired_product_count=30):
+    def find_products(self, desired_product_count=35):
         products_info = []
         wait = WebDriverWait(self.driver, 100)
         product_count = 0
 
         while product_count < desired_product_count:
             # Плавный скроллинг
-            self.driver.execute_script("window.scrollBy(0, 400);")
+            self.driver.execute_script("window.scrollBy(0, 300);")
             time.sleep(1)  # Пауза, чтобы дать время на прогрузку элементов
 
-            # Поиск товаров после каждой итерации скролла
-            products_on_page = self.driver.find_elements(By.XPATH, "//div[@data-index]")
-            for i in range(len(products_on_page)):
+            # Сначала ищем товары по классу карточек товаров
+            product_card_elements = self.driver.find_elements(By.CSS_SELECTOR, "._2im8-._2S9MU._2jRxX")
+            for product_element in product_card_elements:
                 if product_count >= desired_product_count:
                     break
+                product_info = self.extract_product_info(product_element)
+                if product_info:
+                    products_info.append(product_info)
+                    product_count += 1
 
-                try:
+            # Если не нашли достаточное количество, продолжаем искать по data-index
+            if product_count < desired_product_count:
+                products_on_page = self.driver.find_elements(By.XPATH, "//div[@data-index]")
+                for i in range(len(products_on_page)):
+                    if product_count >= desired_product_count:
+                        break
                     product_xpath = f"//div[@data-index='{i}']"
                     product_element = wait.until(EC.visibility_of_element_located((By.XPATH, product_xpath)))
+                    product_info = self.extract_product_info(product_element)
+                    if product_info:
+                        products_info.append(product_info)
+                        product_count += 1
 
-                    try:
-                        price_element = product_element.find_element(By.XPATH,
-                                                                     ".//span[@data-auto='price-value'] | .//h3[@data-auto='snippet-price-current']")
-                        price_text = price_element.text.strip()
-                        price_numbers = re.findall(r'\d+', price_text.replace("\u202f", "").replace(" ", ""))
-                        price = ''.join(price_numbers)
-                        if price:
-                            price = f"{int(price):,}".replace(",", " ") + " ₽"
-                        else:
-                            price = "Цена не найдена"
-                    except Exception as e:
-                        price = "Цена не найдена"
-
-                    store_name = "Магазин не найден"
-                    try:
-                        store_element = product_element.find_element(By.CSS_SELECTOR,
-                                                                     "span._32ild._25-ND._66nxG._3WROT.Qg8Jj._1wKPk")
-                        store_name = store_element.text.strip()
-                    except Exception as e:
-                        pass
-
-                    link = "Ссылка не найдена"
-                    try:
-                        link_element = product_element.find_element(By.CSS_SELECTOR, "a.egKyN._2Fl2z")
-                        link = link_element.get_attribute('href')
-                    except:
-                        pass
-
-                    products_info.append((store_name, price, link))
-                    product_count += 1
-                except Exception as ex:
-                    pass
-
-                if product_count >= desired_product_count:
-                    break
+            if product_count >= desired_product_count:
+                break
 
         return products_info
+
+
+    def extract_product_info(self, product_element):
+        try:
+            price_element = product_element.find_element(By.XPATH,
+                                                         ".//span[@data-auto='price-value'] | .//h3[@data-auto='snippet-price-current']")
+            price_text = price_element.text.strip()
+            price_numbers = re.findall(r'\d+', price_text.replace("\u202f", "").replace(" ", ""))
+            # Объединяем все найденные числа в одну строку, преобразуем в число и форматируем
+            price = ''.join(price_numbers)
+            if price:
+                price = f"{int(price):,}".replace(",", " ") + " ₽"
+            else:
+                price = "Цена не найдена"
+        except Exception as e:
+            price = "Цена не найдена"
+
+
+        store_name = "Магазин не найден"
+        try:
+            store_element = product_element.find_element(By.CSS_SELECTOR,
+                                                         "span._32ild._25-ND._66nxG._3WROT.Qg8Jj._1wKPk")
+            store_name = store_element.text.strip()
+        except Exception as e:
+            pass
+
+        name_element = "Название не найдено"
+        try:
+            name_element = product_element.find_element(By.CSS_SELECTOR, "span._1E10J._2o124._1zh3_")
+            product_title = name_element.text.strip()
+        except Exception as e:
+            product_title = None
+
+
+        except Exception as e:
+            pass
+
+        link = "Ссылка не найдена"
+        try:
+            link_element = product_element.find_element(By.CSS_SELECTOR, "a.egKyN._2Fl2z")
+            link = link_element.get_attribute('href')
+        except:
+            pass
+
+        return store_name, price, link
 
 
     def close_browser(self):

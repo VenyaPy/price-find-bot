@@ -1,5 +1,5 @@
+from app.keyboard.inline import switch_menu
 from telegram import Update, ReplyKeyboardMarkup
-from app.keyboard.inline import *
 from telegram.ext import CallbackContext
 
 

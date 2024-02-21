@@ -1,9 +1,8 @@
-from telegram import (Update)
-from app.keyboard.inline import *
-from telegram.ext import (CallbackContext)
 from db import (show_user,
                 show_emails,
                 show_views)
+from telegram import (Update)
+from telegram.ext import (CallbackContext)
 
 
 

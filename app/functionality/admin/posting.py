@@ -1,14 +1,14 @@
+from db import get_all_user_chat_ids
+from app.keyboard.inline import advertising_menu
 from telegram import (Update,
                       ReplyKeyboardMarkup,
-                      InlineKeyboardMarkup)
-from app.keyboard.inline import *
+                      InlineKeyboardMarkup,
+                      InlineKeyboardButton)
 from telegram.ext import (CallbackContext,
                           CommandHandler,
                           MessageHandler,
                           filters,
                           ConversationHandler)
-from db import (get_all_user_chat_ids)
-
 
 
 # Функция отправки рекламного поста, реализованная через ConversationHandler

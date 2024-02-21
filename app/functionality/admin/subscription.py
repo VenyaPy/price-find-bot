@@ -1,6 +1,6 @@
 from telegram import (Update,
                       ReplyKeyboardMarkup)
-from app.keyboard.inline import *
+from app.keyboard.inline import pub_admin
 from telegram.ext import (CallbackContext,
                           CommandHandler,
                           MessageHandler,
@@ -25,7 +25,6 @@ async def public(update: Update, context: CallbackContext):
                                         "Добавить/удалить паблики для подписки при старте бота👇",
                                    chat_id=user_id,
                                    reply_markup=reply_markup)
-
 
 
 async def start_add_public(update: Update, context: CallbackContext):

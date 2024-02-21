@@ -1,14 +1,20 @@
-from app.functionality.user.functions import *
-from telegram.ext import CallbackQueryHandler
-from app.functionality.admin.posting import *
+from telegram import Update
+from telegram.ext import CallbackContext, CallbackQueryHandler
+from app.functionality.user.start import is_admin, admin_start, start, start_menu, subscription
+from app.functionality.admin.posting import (adv,
+                                             delete_message,
+                                             send_message_to_all_users,
+                                             show_post_with_button,
+                                             conv_handler)
 from app.functionality.admin.subscription import public, active_public
 from app.functionality.admin.accesses import show_admin
 from app.functionality.admin.analytics import users, emails, views
-from app.functionality.admin.functions import analytic_menu, personal_menu, admin_menu
+from app.functionality.admin.admin_start import analytic_menu, personal_menu, admin_menu
 from app.functionality.user.history import history_requests, history_men, delete_history
 from app.functionality.user.callback import callback
 from app.functionality.admin.switcher import switch, enable_start, disable_start
 from app.functionality.user.comparison import gpt_handler
+from app.functionality.user.parsing import analyze_product, parsing
 
 
 # Функция для обработки текстовых сообщений
@@ -112,12 +118,12 @@ async def handle_message(update: Update, context: CallbackContext, check_admin=T
 # Функция для обработки кнопок
 async def handle_callback_query(update: Update, context: CallbackContext):
     query = update.callback_query
-    await query.answer()
+    await query.answer()  # Отправляем пустой ответ на callback
     data = query.data
 
     if data == "1":
-        await request_product_name(update, context)
-    elif data == "2":
+        pass
+    elif data == "2" or data == "4":
         await start(update, context)
 
 

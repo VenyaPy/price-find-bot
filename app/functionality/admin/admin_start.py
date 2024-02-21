@@ -1,7 +1,7 @@
+from app.keyboard.inline import keyboard_for_admin, analytic, admins
 from telegram import (Update,
                       ReplyKeyboardMarkup)
-from app.keyboard.inline import *
-from telegram.ext import (CallbackContext)
+from telegram.ext import CallbackContext
 
 
 # Функция вызывающая главную панель администратора с клавиатурой
@@ -14,7 +14,7 @@ async def admin_start(update, context):
 
 # Функция возвращающая администратора в пользовательское меню
 async def personal_menu(update: Update, context: CallbackContext):
-    from app.functionality.user.functions import start_menu
+    from app.functionality.user.start import start_menu
     await context.bot.send_message(chat_id=update.effective_chat.id,
                                    text="Добро пожаловать в пользовательское меню!")
     await start_menu(update, context, check_admin=False)

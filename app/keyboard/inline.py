@@ -9,10 +9,18 @@ keyboard = [
         ]
 
 
-keyboardMarkup = [
+keyboard_analyze = [
     [
-        InlineKeyboardButton("Новый анализ🔎", callback_data="1"),
-        InlineKeyboardButton("Вернуться назад👈", callback_data="2")
+        InlineKeyboardButton("Повторить🔎", callback_data="repeater"),
+        InlineKeyboardButton("Вернуться👈", callback_data="2")
+    ]
+]
+
+
+keyboard_comparison = [
+    [
+        InlineKeyboardButton("Повторить🔎", callback_data="repeat"),
+        InlineKeyboardButton("Вернуться👈", callback_data="4")
     ]
 ]
 
@@ -43,12 +51,6 @@ analytic = [
     [KeyboardButton("Пользователи🤖"), KeyboardButton("EMAIL📧")],
     [KeyboardButton("Просмотры👁️")],
     [KeyboardButton("Назад👈")]
-]
-
-
-comparison_menu = [
-    [KeyboardButton("Повторить сравнение🚀")],
-    [KeyboardButton("Вернуться👈")]
 ]
 
 
