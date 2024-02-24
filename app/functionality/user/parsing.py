@@ -94,55 +94,63 @@ async def split_message(chat_id, text, context, reply_markup=None, max_length=93
 
 # Функция, вызываемая кнопкой АНАЛИЗ ТОВАРА
 async def analyze_product(update: Update, context: CallbackContext) -> int:
-    if not context.bot_data.get('is_bot_active', True):
-        await context.bot.send_message(chat_id=update.effective_chat.id, text="Бот временно отключен.")
-        return
+    try:
+        if not context.bot_data.get('is_bot_active', True):
+            await context.bot.send_message(chat_id=update.effective_chat.id, text="Бот временно отключен.")
 
-    product_name = update.message.text.strip()  # Получаем название товара, удаляя лишние пробелы
-    user_id = update.effective_chat.id
-    chat_id = update.effective_chat.id
+        product_name = update.message.text.strip()  # Получаем название товара, удаляя лишние пробелы
+        user_id = update.effective_chat.id
+        chat_id = update.effective_chat.id
 
-    # Запись запроса в историю запросов пользователя
-    save_requests(user_id, product_name)  # Предполагаем, что эта функция существует и корректно работает
-    await save_count()
-    # Отправляем фото и текст, сохраняем message_id этих сообщений
-    photo_message = await context.bot.send_photo(chat_id=chat_id, photo="https://imgur.com/G1zON7g")
-    text_message = await context.bot.send_message(chat_id, "Ожидайте. Идёт получение цен...♻️\n"
-                                                           "Обычно это не занимает больше 10-15 секунд😉")
+        # Запись запроса в историю запросов пользователя
+        save_requests(user_id, product_name)  # Предполагаем, что эта функция существует и корректно работает
+        await save_count()
+        # Отправляем фото и текст, сохраняем message_id этих сообщений
+        photo_message = await context.bot.send_photo(chat_id=chat_id, photo="https://imgur.com/G1zON7g")
+        text_message = await context.bot.send_message(chat_id, "Ожидайте. Идёт получение цен...♻️\n"
+                                                               "Обычно это не занимает больше 10-15 секунд😉")
 
-    scraper = WebScraper()
-    loop = asyncio.get_event_loop()
-    results = await loop.run_in_executor(None, lambda: perform_parsing(scraper, product_name))
+        scraper = WebScraper()
+        loop = asyncio.get_event_loop()
+        results = await loop.run_in_executor(None, lambda: perform_parsing(scraper, product_name))
 
-    seen_stores = set()
-    unique_results = []
-    for store_name, price, link in results:
-        if store_name not in seen_stores:
-            unique_results.append((store_name, price, link))
-            seen_stores.add(store_name)
+        seen_stores = set()
+        unique_results = []
+        for store_name, price, link in results:
+            if store_name not in seen_stores:
+                unique_results.append((store_name, price, link))
+                seen_stores.add(store_name)
 
-    response_text = ""
-    for index, (store_name, price, link) in enumerate(unique_results, start=1):
-        formatted_store_name = store_name.title() if not store_name.isupper() else store_name
-        price_numeric = int(re.sub(r'\D', '', price))
-        price_formatted = f"{price_numeric:,.0f}".replace(",", ".").strip() + " ₽"
-        response_text += f"{index}. {formatted_store_name}: <a href='{link}'>{price_formatted}</a>\n"
+        response_text = ""
+        for index, (store_name, price, link) in enumerate(unique_results, start=1):
+            formatted_store_name = store_name.title() if not store_name.isupper() else store_name
+            price_numeric = int(re.sub(r'\D', '', price))
+            price_formatted = f"{price_numeric:,.0f}".replace(",", ".").strip() + " ₽"
+            response_text += f"{index}. {formatted_store_name}: <a href='{link}'>{price_formatted}</a>\n"
 
-    if not response_text:
-        response_text = "К сожалению, не удалось найти товар."
+        if not response_text:
+            response_text = ("Извини, не получилось найти товар😔\n"
+                             "Возможно эта категория сейчас не обслуживается, но скоро мы это исправим🫡")
 
-    reply_markup = InlineKeyboardMarkup(keyboard_analyze)
+        reply_markup = InlineKeyboardMarkup(keyboard_analyze)
 
-    reply_markup = InlineKeyboardMarkup(keyboard_analyze)  # Предполагается, что keyboard_analyze уже определен
-    if len(response_text) > 9300:
-        await split_message(chat_id, response_text, context, reply_markup=reply_markup)
-    else:
-        await context.bot.send_message(chat_id=chat_id, text=response_text, parse_mode='HTML',
-                                       disable_web_page_preview=True, reply_markup=reply_markup)
+        if len(response_text) > 9300:
+            await split_message(chat_id, response_text, context, reply_markup=reply_markup)
+        else:
+            await context.bot.send_message(chat_id=chat_id, text=response_text, parse_mode='HTML',
+                                           disable_web_page_preview=True, reply_markup=reply_markup)
 
-    await context.bot.delete_message(chat_id=chat_id, message_id=photo_message.message_id)
-    await context.bot.delete_message(chat_id=chat_id, message_id=text_message.message_id)
-    return ConversationHandler.END
+        await context.bot.delete_message(chat_id=chat_id, message_id=photo_message.message_id)
+        await context.bot.delete_message(chat_id=chat_id, message_id=text_message.message_id)
+        return ConversationHandler.END
+
+    except Exception as e:
+        reply_markup = InlineKeyboardMarkup(keyboard_analyze)
+        await context.bot.send_message(text="Извини, не получилось найти товар😔\n"
+                                            "Возможно эта категория сейчас не обслуживается, но скоро мы это исправим🫡",
+                                       chat_id=update.effective_chat.id,
+                                       reply_markup=reply_markup)
+        return ConversationHandler.END
 
 
 analyt_handler = ConversationHandler(
@@ -160,20 +168,30 @@ analyt_handler = ConversationHandler(
 def perform_parsing(scraper, product_name):
     scraper.open_page('https://market.yandex.ru/')
     scraper.search_product(product_name)
-    time.sleep(5)  # Даем время для загрузки результатов поиска
+    time.sleep(6)  # Даем время для загрузки результатов поиска
     results = scraper.find_products()
+    time.sleep(6)
     scraper.close_browser()
 
-    # Фильтруем результаты и возвращаем их
-    filtered_results = [
-        (store_name, price, link)
-        for store_name, price, link in results
-        if price and link and 'Цена не найдена' not in price and 'Ссылка не найдена' not in link
-    ]
+    # Извлекаем цифры из названия продукта, указанного пользователем, и формируем множество
+    user_product_numbers_set = set(re.findall(r'\d+', product_name))
+
+    # Фильтруем результаты с учетом нового условия
+    filtered_results = []
+    for store_name, price, link, product_title in results:
+        product_numbers_set = set(re.findall(r'\d+', product_title))
+
+
+        # Проверяем совпадение множеств цифр и пересечение множеств слов
+        if (user_product_numbers_set == product_numbers_set and
+                price and link and
+                'Цена не найдена' not in price and
+                'Ссылка не найдена' not in link):
+            filtered_results.append((store_name, price, link))
 
     # Сортировка результатов по цене
     sorted_results = sorted(filtered_results,
-                            key=lambda x: int(re.sub(r'\D', '', x[1])) if re.sub(r'\D', '', x[1]).isdigit() else float(
-                                'inf'))
+                            key=lambda x: int(re.sub(r'\D', '', x[1])) if re.sub(r'\D', '',
+                                                                                 x[1]).isdigit() else float('inf'))
 
     return sorted_results

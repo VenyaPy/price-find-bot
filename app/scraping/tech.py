@@ -7,6 +7,8 @@ import time
 import re
 
 
+
+
 class WebScraper:
     def __init__(self):
         # Настройка опций для Chrome браузера
@@ -51,14 +53,13 @@ class WebScraper:
             print("Ошибка в вводе:", ex)
 
 
-    def find_products(self, desired_product_count=35):
+    def find_products(self, desired_product_count=40):
         products_info = []
-        wait = WebDriverWait(self.driver, 100)
+        wait = WebDriverWait(self.driver, 20)
         product_count = 0
-
         while product_count < desired_product_count:
             # Плавный скроллинг
-            self.driver.execute_script("window.scrollBy(0, 300);")
+            self.driver.execute_script("window.scrollBy(0, 1300);")
             time.sleep(1)  # Пауза, чтобы дать время на прогрузку элементов
 
             # Сначала ищем товары по классу карточек товаров
@@ -89,14 +90,12 @@ class WebScraper:
 
         return products_info
 
-
     def extract_product_info(self, product_element):
         try:
             price_element = product_element.find_element(By.XPATH,
                                                          ".//span[@data-auto='price-value'] | .//h3[@data-auto='snippet-price-current']")
             price_text = price_element.text.strip()
             price_numbers = re.findall(r'\d+', price_text.replace("\u202f", "").replace(" ", ""))
-            # Объединяем все найденные числа в одну строку, преобразуем в число и форматируем
             price = ''.join(price_numbers)
             if price:
                 price = f"{int(price):,}".replace(",", " ") + " ₽"
@@ -104,7 +103,6 @@ class WebScraper:
                 price = "Цена не найдена"
         except Exception as e:
             price = "Цена не найдена"
-
 
         store_name = "Магазин не найден"
         try:
@@ -114,14 +112,10 @@ class WebScraper:
         except Exception as e:
             pass
 
-        name_element = "Название не найдено"
+        product_title = "Название не найдено"
         try:
             name_element = product_element.find_element(By.CSS_SELECTOR, "span._1E10J._2o124._1zh3_")
             product_title = name_element.text.strip()
-        except Exception as e:
-            product_title = None
-
-
         except Exception as e:
             pass
 
@@ -129,14 +123,15 @@ class WebScraper:
         try:
             link_element = product_element.find_element(By.CSS_SELECTOR, "a.egKyN._2Fl2z")
             link = link_element.get_attribute('href')
-        except:
+        except Exception as e:
             pass
 
-        return store_name, price, link
+        return store_name, price, link, product_title
 
 
     def close_browser(self):
         self.driver.close()
         self.driver.quit()
+
 
 
