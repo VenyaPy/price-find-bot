@@ -4,9 +4,9 @@
 
 **Возможности:**
 
-Библиотека: telegram-python-bot.
-База данных: PostgreSQL
-Дополнительные библиотеки: Selenium, OpenAI API
+- Библиотека: telegram-python-bot.
+- База данных: PostgreSQL.
+- Дополнительные библиотеки: Selenium, OpenAI API.
 
 
 _1. Пользовательская сторона:_
